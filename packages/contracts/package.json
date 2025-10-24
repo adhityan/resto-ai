@@ -1,0 +1,37 @@
+{
+    "name": "@repo/contracts",
+    "version": "0.0.1",
+    "description": "",
+    "author": "K V Adhityan",
+    "private": true,
+    "license": "UNLICENSED",
+    "scripts": {
+        "build": "tsc -b -v",
+        "dev": "tsc -b --watch"
+    },
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "files": [
+        "./dist/**"
+    ],
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "default": "./dist/index.js"
+        },
+        "./*": {
+            "types": "./dist/*.ts"
+        }
+    },
+    "dependencies": {
+        "@repo/database": "*",
+        "@nestjs/swagger": "^11.2.1",
+        "class-transformer": "^0.5.1",
+        "class-validator": "^0.14.2"
+    },
+    "devDependencies": {
+        "@repo/eslint-config": "*",
+        "@repo/typescript-config": "*",
+        "typescript": "^5.9.3"
+    }
+}

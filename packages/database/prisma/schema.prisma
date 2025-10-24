@@ -1,0 +1,101 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum UserType {
+  APP_ADMIN
+  SUPER_ADMIN
+}
+
+enum ItemType {
+  DRINK
+  APPETIZER
+  MAIN_COURSE
+  DESSERT
+  SIDE
+  SALAD
+}
+
+model Restaurant {
+  id                  String  @id @default(uuid())
+  name                String
+  isActive            Boolean @default(true)
+  incomingPhoneNumber String
+
+  zenchefId String @unique
+  apiToken  String @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  menus     Menu[]
+  customers Customer[]
+
+  @@index([incomingPhoneNumber])
+}
+
+model Menu {
+  id          String  @id @default(uuid())
+  isActive    Boolean @default(true)
+  description String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
+  menuItems    MenuItem[]
+
+  @@index([restaurantId, isActive])
+}
+
+model MenuItem {
+  id   String   @id @default(uuid())
+  type ItemType
+  name String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  menuId String
+  menu   Menu   @relation(fields: [menuId], references: [id])
+
+  @@unique([menuId, type, name])
+  @@index([menuId, name])
+  @@index([menuId])
+}
+
+model Customer {
+  id    String  @id @default(uuid())
+  name  String
+  email String?
+  phone String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
+
+  @@unique([restaurantId, email])
+  @@unique([restaurantId, phone])
+  @@index([restaurantId, name])
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  type         UserType
+  isActive     Boolean  @default(true)
+
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+}

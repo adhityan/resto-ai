@@ -1,0 +1,61 @@
+# Version control
+.git
+.gitignore
+
+# Dependencies
+node_modules
+**/node_modules
+
+# Build outputs
+dist
+**/.turbo
+**/.cache
+
+# Logs
+**/*.log
+*.log
+
+# Testing
+test
+coverage
+**/__tests__
+**/*.test.ts
+**/*.test.js
+**/*.spec.ts
+**/*.spec.js
+
+# Temporary files
+temp
+tmp
+*.tmp
+
+# IDE and editor files
+.vscode
+.idea
+*.swp
+*.swo
+*~
+**/.DS_Store
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Documentation
+*.md
+!README.md
+
+# Docker files (don't copy into build context)
+*.Dockerfile
+docker-compose*.yml
+
+# Prisma generated files (will be generated during build)
+packages/database/generated/prisma
+
+# Misc
+*.txt
+!package.json
+!package-lock.json
+
+

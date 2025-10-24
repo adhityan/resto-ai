@@ -1,0 +1,24 @@
+{
+    "$schema": "https://turborepo.com/schema.json",
+    "ui": "tui",
+    "concurrency": "100",
+    "tasks": {
+        "build": {
+            "dependsOn": ["^build"],
+            "outputs": ["dist/**"],
+            "inputs": ["src/**/*.ts", ".env*"]
+        },
+        "lint": {
+            "dependsOn": ["^lint"]
+        },
+        "check-types": {
+            "dependsOn": ["^check-types"]
+        },
+        "dev": {
+            "persistent": true,
+            "cache": false,
+            "inputs": [],
+            "outputs": []
+        }
+    }
+}

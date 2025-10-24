@@ -1,0 +1,39 @@
+{
+    "name": "@repo/utils",
+    "version": "0.0.1",
+    "description": "",
+    "author": "K V Adhityan",
+    "private": true,
+    "license": "UNLICENSED",
+    "scripts": {
+        "build": "tsc -b -v",
+        "dev": "tsc -b --watch"
+    },
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "files": [
+        "./dist/**"
+    ],
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "default": "./dist/index.js"
+        },
+        "./*": {
+            "types": "./dist/*.ts"
+        }
+    },
+    "dependencies": {
+        "node-rsa": "^1.1.1",
+        "bcryptjs": "^3.0.2",
+        "@nestjs/common": "^11.1.7",
+        "@nestjs/platform-express": "^11.1.7",
+        "@nestjs/swagger": "^11.2.1",
+        "node-cache": "^5.1.2"
+    },
+    "devDependencies": {
+        "@repo/eslint-config": "*",
+        "@repo/typescript-config": "*",
+        "typescript": "^5.9.3"
+    }
+}

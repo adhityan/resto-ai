@@ -1,0 +1,61 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+enum UserType {
+  USER
+  ADMIN
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  type         UserType @default(USER)
+  isActive     Boolean  @default(true)
+
+  jobs Job[]
+
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+}
+
+enum JobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum JobType {
+  START_VIDEO_GENERATION
+  FETCH_AND_UPLOAD_VIDEO
+  MERGE_VIDEOS
+}
+
+model Job {
+  id     String    @id @default(uuid())
+  type   JobType
+  status JobStatus @default(PENDING)
+
+  parameters Json
+  results    Json?
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:/Users/adhityan/Code/video-gen/temp/database.db"
+}

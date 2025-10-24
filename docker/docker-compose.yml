@@ -1,0 +1,87 @@
+services:
+  traefik:
+    image: traefik:latest
+    container_name: traefik
+    command:
+      # Enable Docker provider
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.network=web"
+
+      # HTTP entrypoint (no HTTPS as nginx handles it)
+      - "--entrypoints.web.address=:80"
+
+      # Disable API and dashboard for security (enable if needed for debugging)
+      - "--api.dashboard=false"
+
+      # Logging
+      - "--log.level=INFO"
+      - "--accesslog=true"
+
+      # Security headers
+      - "--entrypoints.web.http.middlewares=security-headers@docker"
+    ports:
+      # Only expose HTTP port to host
+      - "3000:80"
+    volumes:
+      # Docker socket for service discovery
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - web
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    labels:
+      # Security headers middleware
+      - "traefik.enable=true"
+      - "traefik.http.middlewares.security-headers.headers.customResponseHeaders.X-Frame-Options=DENY"
+      - "traefik.http.middlewares.security-headers.headers.customResponseHeaders.X-Content-Type-Options=nosniff"
+      - "traefik.http.middlewares.security-headers.headers.customResponseHeaders.X-XSS-Protection=1; mode=block"
+      - "traefik.http.middlewares.security-headers.headers.customResponseHeaders.Referrer-Policy=strict-origin-when-cross-origin"
+
+  backend:
+    image: docker.registry.home.adhityan.com/stripe-backend
+    container_name: stripe-backend
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+    volumes:
+      - ./data:/app/data
+    networks:
+      - web
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    labels:
+      - "traefik.enable=true"
+      # HTTP router for /api path (any host)
+      - "traefik.http.routers.backend.rule=PathPrefix(`/api`)"
+      - "traefik.http.routers.backend.entrypoints=web"
+      - "traefik.http.routers.backend.priority=10"
+      - "traefik.http.services.backend.loadbalancer.server.port=3000"
+      # Apply security headers
+      - "traefik.http.routers.backend.middlewares=security-headers@docker"
+
+  admin:
+    image: docker.registry.home.adhityan.com/stripe-admin
+    container_name: stripe-admin
+    networks:
+      - web
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    labels:
+      - "traefik.enable=true"
+      # HTTP router for root path (any host, lower priority than /api)
+      - "traefik.http.routers.admin.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.admin.entrypoints=web"
+      - "traefik.http.routers.admin.priority=1"
+      - "traefik.http.services.admin.loadbalancer.server.port=80"
+      # Apply security headers
+      - "traefik.http.routers.admin.middlewares=security-headers@docker"
+
+networks:
+  web:
+    name: web
+    driver: bridge

@@ -1,0 +1,27 @@
+{
+    "name": "stripe-service",
+    "private": true,
+    "scripts": {
+        "dev": "turbo  run dev --parallel",
+        "lint": "turbo run lint",
+        "build": "turbo run build",
+        "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+        "check-types": "turbo run check-types",
+        "knip": "knip"
+    },
+    "devDependencies": {
+        "prettier": "^3.6.2",
+        "prettier-plugin-tailwindcss": "^0.7.1",
+        "turbo": "^2.5.8",
+        "typescript": "5.9.3",
+        "knip": "^5.66.2"
+    },
+    "engines": {
+        "node": ">=20"
+    },
+    "packageManager": "npm@11.6.2",
+    "workspaces": [
+        "apps/*",
+        "packages/*"
+    ]
+}

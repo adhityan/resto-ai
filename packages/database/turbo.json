@@ -1,0 +1,33 @@
+{
+    "extends": ["//"],
+    "tasks": {
+        "build": {
+            "dependsOn": ["db:generate", "^build"],
+            "env": ["DATABASE_URL"]
+        },
+        "dev": {
+            "persistent": true,
+            "dependsOn": ["build"]
+        },
+        "db:generate": {
+            "outputs": ["node_modules/.prisma/**", "prisma/**"],
+            "cache": false
+        },
+        "db:migrate": {
+            "cache": false,
+            "persistent": true
+        },
+        "db:reset": {
+            "cache": false
+        },
+        "db:deploy": {
+            "cache": false,
+            "env": ["DATABASE_URL"]
+        },
+        "db:seed": {
+            "dependsOn": ["db:generate"],
+            "env": ["DATABASE_URL"],
+            "cache": false
+        }
+    }
+}
