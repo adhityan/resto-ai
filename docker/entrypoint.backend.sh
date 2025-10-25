@@ -19,7 +19,7 @@ fi
 echo "Migrations completed successfully"
 echo "Running database seed..."
 
-# Run compiled database seed directly (requires SUPER_ADMIN_PASSWORD and APP_BASE_URL)
+# Run compiled database seed directly (requires ADMIN_PASSWORD)
 if ! node /repo/packages/database/prisma/seed.js; then
   echo "ERROR: Database seed failed" >&2
   exit 1

@@ -9,7 +9,6 @@ import rateLimit from "@fastify/rate-limit";
 
 import { AuthGuard } from "./modules/auth/guard/auth.guard";
 import { MainModule } from "./modules/main/main.module";
-import { SecurityError } from "./errors/security.error";
 
 const PORT = process.env.PORT ?? 3000;
 const isProduction = process.env.NODE_ENV === "production";
@@ -69,16 +68,8 @@ async function bootstrap() {
         app.setGlobalPrefix(pathPrefix);
     }
     // Security: Ensure ALLOWED_ORIGINS is set in production
-    if (isProduction && !process.env.ALLOWED_ORIGINS)
-        throw new SecurityError(
-            "ALLOWED_ORIGINS environment variable must be set in production"
-        );
-    const allowedOrigins = process.env.ALLOWED_ORIGINS
-        ? process.env.ALLOWED_ORIGINS.split(",").map((origin) => origin.trim())
-        : ["http://localhost:5173", "http://localhost:3001"];
-
     app.enableCors({
-        origin: allowedOrigins,
+        origin: ["http://localhost:5173", "http://localhost:3001"],
         methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
         credentials: true,
         maxAge: 86400, // 24 hours

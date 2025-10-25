@@ -1,45 +1,40 @@
-#docker build -t docker.registry.home.adhityan.com/stripe-backend -f docker/backend.Dockerfile .
-#docker push docker.registry.home.adhityan.com/stripe-backend
+#docker build -t docker.registry.home.adhityan.com/resto-ai-backend -f docker/backend.Dockerfile .
+#docker push docker.registry.home.adhityan.com/resto-ai-backend
 FROM node:24-alpine AS base
 
-# Dependencies stage: install ALL dependencies (cached unless package.json changes)
-FROM base AS deps
+# Prep stage: copy minimal files and prune the monorepo to only what's needed for backend
+FROM base AS prep
 WORKDIR /repo
 ENV CI=1
-
-# Copy root manifests
 COPY package.json package-lock.json turbo.json ./
-
-# Copy only package.json files from all packages (not source code!)
+# Only copy package.json files from packages, not the source code
 COPY packages/common/package.json ./packages/common/package.json
 COPY packages/contracts/package.json ./packages/contracts/package.json
 COPY packages/database/package.json ./packages/database/package.json
 COPY packages/eslint-config/package.json ./packages/eslint-config/package.json
 COPY packages/typescript-config/package.json ./packages/typescript-config/package.json
 COPY packages/utils/package.json ./packages/utils/package.json
-
-# Copy package.json from apps
+# Only copy package.json files from apps, not the source code
 COPY apps/backend/package.json ./apps/backend/package.json
-COPY apps/admin/package.json ./apps/admin/package.json
+# Install root deps to run turbo prune
+RUN npm ci
+# Now copy the full source code after npm ci for pruning
+COPY packages ./packages
+COPY apps ./apps
+RUN npx turbo prune --scope=backend --docker
 
-# Install all dependencies (this layer is cached unless package.json changes)
+# Deps stage: install ALL dependencies (needed for build tools like Prisma CLI, SWC, etc.)
+FROM base AS deps
+WORKDIR /repo
+ENV CI=1
+COPY --from=prep /repo/out/json/ .
 RUN npm ci
 
 # Production deps stage: install only production dependencies for runtime
 FROM base AS prod-deps
 WORKDIR /repo
 ENV CI=1
-
-COPY package.json package-lock.json turbo.json ./
-COPY packages/common/package.json ./packages/common/package.json
-COPY packages/contracts/package.json ./packages/contracts/package.json
-COPY packages/database/package.json ./packages/database/package.json
-COPY packages/eslint-config/package.json ./packages/eslint-config/package.json
-COPY packages/typescript-config/package.json ./packages/typescript-config/package.json
-COPY packages/utils/package.json ./packages/utils/package.json
-COPY apps/backend/package.json ./apps/backend/package.json
-COPY apps/admin/package.json ./apps/admin/package.json
-
+COPY --from=prep /repo/out/json/ .
 RUN npm ci --omit=dev --omit=optional
 
 # Package builder stage: build dependency packages (cached unless package source changes)
@@ -48,27 +43,13 @@ WORKDIR /repo
 ENV CI=1
 RUN apk add --no-cache libc6-compat openssl
 
-# Copy root files
-COPY package.json package-lock.json turbo.json ./
-
 # Copy dependencies from deps stage
 COPY --from=deps /repo/node_modules ./node_modules
 
-# Copy package.json files
-COPY packages/common/package.json ./packages/common/package.json
-COPY packages/contracts/package.json ./packages/contracts/package.json
-COPY packages/database/package.json ./packages/database/package.json
-COPY packages/utils/package.json ./packages/utils/package.json
-COPY packages/typescript-config/package.json ./packages/typescript-config/package.json
-COPY packages/eslint-config/package.json ./packages/eslint-config/package.json
-
-# Copy package source code
-COPY packages/common ./packages/common
-COPY packages/contracts ./packages/contracts
-COPY packages/database ./packages/database
-COPY packages/utils ./packages/utils
-COPY packages/typescript-config ./packages/typescript-config
-COPY packages/eslint-config ./packages/eslint-config
+# Copy pruned package source
+COPY --from=prep /repo/out/full/packages ./packages
+COPY --from=prep /repo/out/json/package.json ./package.json
+COPY --from=prep /repo/out/full/turbo.json ./turbo.json
 
 # Generate Prisma client and build packages (cached unless package source changes)
 RUN npx turbo run db:generate --filter=@repo/database
@@ -94,22 +75,16 @@ WORKDIR /repo
 ENV CI=1
 RUN apk add --no-cache libc6-compat openssl
 
-# Copy root files
-COPY package.json package-lock.json turbo.json ./
-
 # Copy dependencies
 COPY --from=deps /repo/node_modules ./node_modules
 
 # Copy built packages from package-builder
-COPY --from=package-builder /repo/packages/common ./packages/common
-COPY --from=package-builder /repo/packages/contracts ./packages/contracts
-COPY --from=package-builder /repo/packages/database ./packages/database
-COPY --from=package-builder /repo/packages/utils ./packages/utils
-COPY --from=package-builder /repo/packages/typescript-config ./packages/typescript-config
-COPY --from=package-builder /repo/packages/eslint-config ./packages/eslint-config
+COPY --from=package-builder /repo/packages ./packages
+COPY --from=prep /repo/out/json/package.json ./package.json
+COPY --from=prep /repo/out/full/turbo.json ./turbo.json
 
 # Copy backend app source (this is the layer that changes most frequently)
-COPY apps/backend ./apps/backend
+COPY --from=prep /repo/out/full/apps/backend ./apps/backend
 
 # Build only the backend app
 RUN npx turbo run build --filter=backend
@@ -122,7 +97,7 @@ ENV NODE_ENV=production
 # Copy only necessary artifacts (not entire packages directory)
 COPY --from=app-builder /repo/apps/backend/dist ./dist
 COPY --from=package-builder /repo/packages/database/dist /repo/packages/database/dist
-COPY --from=package-builder /repo/packages/database/generated /repo/packages/database/generated
+COPY --from=package-builder /repo/packages/database/generated/prisma /repo/packages/database/generated/prisma
 COPY --from=package-builder /repo/packages/database/prisma/schema.prisma /repo/packages/database/prisma/schema.prisma
 COPY --from=package-builder /repo/packages/database/prisma/migrations /repo/packages/database/prisma/migrations
 COPY --from=package-builder /repo/packages/database/prisma/seed.js /repo/packages/database/prisma/seed.js
