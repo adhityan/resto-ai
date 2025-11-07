@@ -6,6 +6,8 @@ import {
     ReservationListResponseModel,
 } from "@repo/contracts";
 import { ZenchefService } from "../zenchef/zenchef.service";
+import { RestaurantService } from "../restaurant/restaurant.service";
+import { GeneralError, RestaurantNotFoundError } from "../../errors";
 
 /**
  * Service layer for reservation management
@@ -15,7 +17,35 @@ import { ZenchefService } from "../zenchef/zenchef.service";
 export class ReservationsService {
     private readonly logger = new Logger(ReservationsService.name);
 
-    constructor(private readonly zenchefService: ZenchefService) {}
+    constructor(
+        private readonly zenchefService: ZenchefService,
+        private readonly restaurantService: RestaurantService
+    ) {}
+
+    /**
+     * Helper method to get restaurant credentials
+     */
+    private async getRestaurantCredentials(
+        restaurantId: string
+    ): Promise<{ zenchefId: string; apiToken: string }> {
+        const restaurant =
+            await this.restaurantService.findRestaurantById(restaurantId);
+
+        if (!restaurant) {
+            throw new RestaurantNotFoundError(restaurantId);
+        }
+
+        if (!restaurant.zenchefId || !restaurant.apiToken) {
+            throw new GeneralError(
+                "Restaurant Zenchef credentials not configured"
+            );
+        }
+
+        return {
+            zenchefId: restaurant.zenchefId,
+            apiToken: restaurant.apiToken,
+        };
+    }
 
     /**
      * Checks availability for a given date and number of people
@@ -37,8 +67,12 @@ export class ReservationsService {
             `Checking availability for restaurant "${restaurantId}" on "${date}" for "${numberOfPeople}" people${time ? ` at "${time}"` : ""}${seatingPreference ? ` (preference: "${seatingPreference}")` : ""}`
         );
 
+        const { zenchefId, apiToken } =
+            await this.getRestaurantCredentials(restaurantId);
+
         const availability = await this.zenchefService.checkAvailability(
-            restaurantId,
+            zenchefId,
+            apiToken,
             date,
             numberOfPeople,
             time,
@@ -100,8 +134,12 @@ export class ReservationsService {
             `For restaurant "${restaurantId}", getting reservations by phone "${phone}" ${date ? ` for date "${date}"` : ""}`
         );
 
+        const { zenchefId, apiToken } =
+            await this.getRestaurantCredentials(restaurantId);
+
         const reservations = await this.zenchefService.getReservationByPhone(
-            restaurantId,
+            zenchefId,
+            apiToken,
             phone,
             date
         );
@@ -154,8 +192,12 @@ export class ReservationsService {
             `For restaurant "${restaurantId}", searching reservations${date ? ` for date "${date}"` : ""}${customerName ? ` with name "${customerName}"` : ""}`
         );
 
+        const { zenchefId, apiToken } =
+            await this.getRestaurantCredentials(restaurantId);
+
         const reservations = await this.zenchefService.searchReservations(
-            restaurantId,
+            zenchefId,
+            apiToken,
             date,
             customerName
         );
@@ -242,8 +284,12 @@ export class ReservationsService {
         //     description: `Successfully created a new reservation. Booking ID: 512345. Customer: ${name} (phone: ${phone}${email ? `, email: ${email}` : ""}). Reservation: ${numberOfCustomers} people on ${date} at ${time}${seatingPreference ? ` in ${seatingPreference} seating area` : ""}.${comments ? ` Special requests: ${comments}.` : ""}`,
         // };
 
+        const { zenchefId, apiToken } =
+            await this.getRestaurantCredentials(restaurantId);
+
         const booking = await this.zenchefService.createReservation(
-            restaurantId,
+            zenchefId,
+            apiToken,
             numberOfCustomers,
             phone,
             name,
@@ -323,8 +369,12 @@ export class ReservationsService {
         //     description: `Successfully updated the reservation. Booking ID: ${bookingId}. Updated customer information: ${name} (phone: ${phone}${email ? `, email: ${email}` : ""}). Updated reservation details: ${numberOfCustomers} people on ${date} at ${time}${seatingPreference ? ` in ${seatingPreference} seating area` : ""}.${comments ? ` Special requests: ${comments}.` : ""}`,
         // };
 
+        const { zenchefId, apiToken } =
+            await this.getRestaurantCredentials(restaurantId);
+
         const booking = await this.zenchefService.updateReservation(
-            restaurantId,
+            zenchefId,
+            apiToken,
             bookingId,
             numberOfCustomers,
             phone,
@@ -380,7 +430,14 @@ export class ReservationsService {
         //     description: `Successfully cancelled the reservation with Booking ID: ${bookingId}. The reservation has been removed from the system.`,
         // };
 
-        await this.zenchefService.cancelReservation(restaurantId, bookingId);
+        const { zenchefId, apiToken } =
+            await this.getRestaurantCredentials(restaurantId);
+
+        await this.zenchefService.cancelReservation(
+            zenchefId,
+            apiToken,
+            bookingId
+        );
 
         // Generate human-readable description
         const description = `Successfully cancelled the reservation with Booking ID: ${bookingId}. The reservation has been removed from the system.`;

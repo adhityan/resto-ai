@@ -26,7 +26,8 @@
     "dependencies": {
         "@repo/database": "*",
         "@repo/utils": "*",
-        "@nestjs/common": "^11.1.7"
+        "@nestjs/common": "^11.1.8",
+        "@nestjs/axios": "^4.0.1"
     },
     "devDependencies": {
         "@repo/eslint-config": "*",

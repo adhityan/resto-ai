@@ -30,14 +30,14 @@
         }
     },
     "dependencies": {
-        "@nestjs/common": "^11.1.7",
-        "@prisma/client": "^6.17.1",
+        "@nestjs/common": "^11.1.8",
+        "@prisma/client": "^6.19.0",
         "@prisma/extension-accelerate": "^2.0.2"
     },
     "devDependencies": {
         "@repo/eslint-config": "*",
         "@repo/typescript-config": "*",
-        "prisma": "^6.17.1",
+        "prisma": "^6.19.0",
         "ts-node": "^10.9.2",
         "typescript": "^5.9.3"
     },

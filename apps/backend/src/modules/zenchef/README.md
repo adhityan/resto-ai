@@ -46,7 +46,8 @@ Checks table availability for a given date, number of people, and optional time/
 
 ```typescript
 async checkAvailability(
-    restaurantId: string,
+    zenchefId: string,
+    apiToken: string,
     date: string,
     numberOfPeople: number,
     time?: string,
@@ -71,7 +72,8 @@ Retrieves all reservations for a customer by phone number.
 
 ```typescript
 async getReservationByPhone(
-    restaurantId: string,
+    zenchefId: string,
+    apiToken: string,
     phone: string,
     date?: string
 ): Promise<ReservationItemModel[]>
@@ -85,7 +87,8 @@ Searches reservations by date and/or customer name with fuzzy matching.
 
 ```typescript
 async searchReservations(
-    restaurantId: string,
+    zenchefId: string,
+    apiToken: string,
     date?: string,
     customerName?: string
 ): Promise<ReservationItemModel[]>
@@ -102,7 +105,8 @@ Creates a new reservation.
 
 ```typescript
 async createReservation(
-    restaurantId: string,
+    zenchefId: string,
+    apiToken: string,
     numberOfCustomers: number,
     phone: string,
     name: string,
@@ -130,7 +134,8 @@ Updates an existing reservation.
 
 ```typescript
 async updateReservation(
-    restaurantId: string,
+    zenchefId: string,
+    apiToken: string,
     bookingId: string,
     numberOfCustomers: number,
     phone: string,
@@ -154,7 +159,8 @@ Cancels an existing reservation.
 
 ```typescript
 async cancelReservation(
-    restaurantId: string,
+    zenchefId: string,
+    apiToken: string,
     bookingId: string
 ): Promise<void>
 ```
@@ -165,14 +171,25 @@ async cancelReservation(
 
 ```typescript
 import { ZenchefService } from './modules/zenchef/zenchef.service';
+import { RestaurantService } from './modules/restaurant/restaurant.service';
 
 @Injectable()
 export class BookingService {
-    constructor(private readonly zenchefService: ZenchefService) {}
+    constructor(
+        private readonly zenchefService: ZenchefService,
+        private readonly restaurantService: RestaurantService
+    ) {}
 
     async checkTableAvailability(restaurantId: string) {
+        // Get restaurant credentials first
+        const restaurant = await this.restaurantService.findRestaurantById(restaurantId);
+        if (!restaurant?.zenchefId || !restaurant?.apiToken) {
+            throw new Error('Restaurant credentials not configured');
+        }
+
         const availability = await this.zenchefService.checkAvailability(
-            restaurantId,
+            restaurant.zenchefId,
+            restaurant.apiToken,
             '2025-10-25',
             4,
             '19:00',
@@ -189,8 +206,15 @@ export class BookingService {
     }
 
     async makeReservation(restaurantId: string) {
+        // Get restaurant credentials first
+        const restaurant = await this.restaurantService.findRestaurantById(restaurantId);
+        if (!restaurant?.zenchefId || !restaurant?.apiToken) {
+            throw new Error('Restaurant credentials not configured');
+        }
+
         const booking = await this.zenchefService.createReservation(
-            restaurantId,
+            restaurant.zenchefId,
+            restaurant.apiToken,
             4,
             '+33612345678',
             'John Smith',

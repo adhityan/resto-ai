@@ -49,6 +49,37 @@ export interface ZenchefAvailabilityResponse {
 }
 
 // ============================================================================
+// Shifts API Types (V2)
+// ============================================================================
+
+/**
+ * Represents a room (seating area) in a shift
+ */
+export interface ZenchefRoom {
+    id: number;
+    name: string;
+    description: string | null;
+    capacity: number;
+    is_bookable: boolean;
+}
+
+/**
+ * Full shift data from Shifts API
+ */
+export interface ZenchefShiftData {
+    id: number;
+    name: string;
+    rooms: ZenchefRoom[];
+}
+
+/**
+ * Response from GET /restaurants/{restaurantId}/shifts
+ */
+export interface ZenchefShiftsResponse {
+    data: ZenchefShiftData[];
+}
+
+// ============================================================================
 // Booking API Types (V1)
 // ============================================================================
 

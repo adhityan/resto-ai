@@ -34,10 +34,23 @@ model Restaurant {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  menus     Menu[]
-  customers Customer[]
+  menus        Menu[]
+  customers    Customer[]
+  seatingAreas SeatingArea[]
 
   @@index([incomingPhoneNumber])
+}
+
+model SeatingArea {
+  id          String  @id @default(uuid())
+  name        String
+  description String?
+  maxCapacity Int
+
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
+
+  @@index([restaurantId])
 }
 
 model Menu {

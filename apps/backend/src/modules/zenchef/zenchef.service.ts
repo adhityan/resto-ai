@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
@@ -9,9 +9,9 @@ import {
     AvailabilityResponseModel,
     BookingObjectModel,
     ReservationItemModel,
+    SeatingAreaModel,
 } from "@repo/contracts";
-import { RestaurantService } from "../restaurant/restaurant.service";
-import { GeneralError, RestaurantNotFoundError } from "../../errors";
+import { GeneralError } from "../../errors";
 import {
     ZenchefAvailabilityResponse,
     ZenchefBookingData,
@@ -19,6 +19,7 @@ import {
     ZenchefBookingSearchResponse,
     ZenchefChangeTimePayload,
     ZenchefCreateBookingPayload,
+    ZenchefShiftsResponse,
 } from "../../types/zenchef";
 import { ObjectUtils } from "@repo/utils";
 
@@ -35,9 +36,7 @@ export class ZenchefService {
 
     constructor(
         private readonly httpService: HttpService,
-        private readonly configService: ConfigService,
-        @Inject(RestaurantService)
-        private readonly restaurantService: RestaurantService
+        private readonly configService: ConfigService
     ) {
         this.baseUrlV1 =
             this.configService.get<string>("ZENCHEF_API_BASE_URL_V1") || "";
@@ -45,35 +44,6 @@ export class ZenchefService {
             this.configService.get<string>("ZENCHEF_API_BASE_URL_V2") || "";
         this.publisherName =
             this.configService.get<string>("ZENCHEF_PUBLISHER_NAME") || "";
-    }
-
-    /**
-     * Fetches restaurant Zenchef credentials from database
-     * @param restaurantId - Internal restaurant ID
-     * @returns Zenchef ID and API token
-     * @throws RestaurantNotFoundError if restaurant not found
-     * @throws GeneralError if credentials not configured
-     */
-    private async getRestaurantCredentials(
-        restaurantId: string
-    ): Promise<{ zenchefId: string; apiToken: string }> {
-        const restaurant =
-            await this.restaurantService.findRestaurantById(restaurantId);
-
-        if (!restaurant) {
-            throw new RestaurantNotFoundError(restaurantId);
-        }
-
-        if (!restaurant.zenchefId || !restaurant.apiToken) {
-            throw new GeneralError(
-                "Restaurant Zenchef credentials not configured"
-            );
-        }
-
-        return {
-            zenchefId: restaurant.zenchefId,
-            apiToken: restaurant.apiToken,
-        };
     }
 
     /**
@@ -125,7 +95,8 @@ export class ZenchefService {
 
     /**
      * Checks availability for a given date, number of people, and optional time/seating preference
-     * @param restaurantId - Internal restaurant ID
+     * @param zenchefId - Restaurant Zenchef ID
+     * @param apiToken - Restaurant API token
      * @param date - Date to check (ISO format YYYY-MM-DD)
      * @param numberOfPeople - Number of guests
      * @param time - Optional specific time to check (HH:MM format)
@@ -133,15 +104,13 @@ export class ZenchefService {
      * @returns Availability information including available slots and next available date
      */
     public async checkAvailability(
-        restaurantId: string,
+        zenchefId: string,
+        apiToken: string,
         date: string,
         numberOfPeople: number,
         time?: string,
         seatingPreference?: string
     ): Promise<Omit<AvailabilityResponseModel, "description">> {
-        const { zenchefId, apiToken } =
-            await this.getRestaurantCredentials(restaurantId);
-
         try {
             // Call availability API for the requested date
             const response = await firstValueFrom(
@@ -152,7 +121,7 @@ export class ZenchefService {
                         params: {
                             "date-begin": date,
                             "date-end": date,
-                            with: "possible_guests",
+                            with: "possible_guests|capacity|occupation",
                         },
                     }
                 )
@@ -332,19 +301,18 @@ export class ZenchefService {
 
     /**
      * Retrieves reservations by customer phone number
-     * @param restaurantId - Internal restaurant ID
+     * @param zenchefId - Restaurant Zenchef ID
+     * @param apiToken - Restaurant API token
      * @param phone - Customer phone number
      * @param date - Optional date filter (ISO format YYYY-MM-DD)
      * @returns Array of reservation items
      */
     public async getReservationByPhone(
-        restaurantId: string,
+        zenchefId: string,
+        apiToken: string,
         phone: string,
         date?: string
     ): Promise<ReservationItemModel[]> {
-        const { zenchefId, apiToken } =
-            await this.getRestaurantCredentials(restaurantId);
-
         try {
             const params = new URLSearchParams();
             params.append("filters[0][field]", "reservation_type");
@@ -389,19 +357,18 @@ export class ZenchefService {
 
     /**
      * Searches for reservations by optional date and customer name
-     * @param restaurantId - Internal restaurant ID
+     * @param zenchefId - Restaurant Zenchef ID
+     * @param apiToken - Restaurant API token
      * @param date - Optional date filter (ISO format YYYY-MM-DD)
      * @param customerName - Optional customer name for fuzzy search
      * @returns Array of matching reservation items
      */
     public async searchReservations(
-        restaurantId: string,
+        zenchefId: string,
+        apiToken: string,
         date?: string,
         customerName?: string
     ): Promise<ReservationItemModel[]> {
-        const { zenchefId, apiToken } =
-            await this.getRestaurantCredentials(restaurantId);
-
         try {
             const params = new URLSearchParams();
             params.append("filters[0][field]", "reservation_type");
@@ -462,7 +429,8 @@ export class ZenchefService {
 
     /**
      * Creates a new reservation
-     * @param restaurantId - Internal restaurant ID
+     * @param zenchefId - Restaurant Zenchef ID
+     * @param apiToken - Restaurant API token
      * @param numberOfCustomers - Number of guests
      * @param phone - Customer phone number
      * @param name - Customer full name
@@ -475,7 +443,8 @@ export class ZenchefService {
      * @throws GeneralError if booking cannot be created
      */
     public async createReservation(
-        restaurantId: string,
+        zenchefId: string,
+        apiToken: string,
         numberOfCustomers: number,
         phone: string,
         name: string,
@@ -485,9 +454,6 @@ export class ZenchefService {
         email?: string,
         seatingPreference?: string
     ): Promise<Omit<BookingObjectModel, "description">> {
-        const { zenchefId, apiToken } =
-            await this.getRestaurantCredentials(restaurantId);
-
         // Parse name into first and last name
         const nameParts = name.trim().split(/\s+/);
         const firstname = nameParts[0];
@@ -563,7 +529,8 @@ export class ZenchefService {
 
     /**
      * Updates an existing reservation
-     * @param restaurantId - Internal restaurant ID
+     * @param zenchefId - Restaurant Zenchef ID
+     * @param apiToken - Restaurant API token
      * @param bookingId - Zenchef booking ID
      * @param numberOfCustomers - Number of guests
      * @param phone - Customer phone number
@@ -577,7 +544,8 @@ export class ZenchefService {
      * @throws GeneralError if update fails
      */
     public async updateReservation(
-        restaurantId: string,
+        zenchefId: string,
+        apiToken: string,
         bookingId: string,
         numberOfCustomers: number,
         phone: string,
@@ -588,9 +556,6 @@ export class ZenchefService {
         email?: string,
         seatingPreference?: string
     ): Promise<Omit<BookingObjectModel, "description">> {
-        const { zenchefId, apiToken } =
-            await this.getRestaurantCredentials(restaurantId);
-
         try {
             // Get current booking to determine if only time changed
             const currentBooking = await this.getBookingById(
@@ -701,17 +666,16 @@ export class ZenchefService {
 
     /**
      * Cancels an existing reservation
-     * @param restaurantId - Internal restaurant ID
+     * @param zenchefId - Restaurant Zenchef ID
+     * @param apiToken - Restaurant API token
      * @param bookingId - Zenchef booking ID
      * @throws GeneralError if cancellation fails
      */
     public async cancelReservation(
-        restaurantId: string,
+        zenchefId: string,
+        apiToken: string,
         bookingId: string
     ): Promise<void> {
-        const { zenchefId, apiToken } =
-            await this.getRestaurantCredentials(restaurantId);
-
         try {
             await firstValueFrom(
                 this.httpService.patch<ZenchefBookingResponse>(
@@ -808,6 +772,54 @@ export class ZenchefService {
             });
 
         return mappedBookings;
+    }
+
+    /**
+     * Retrieves available seating areas (rooms) for a restaurant
+     * @param zenchefId - Restaurant Zenchef ID
+     * @param apiToken - Restaurant API token
+     * @returns Array of seating areas with id, name, description, and max_capacity
+     */
+    public async getSeatingAreas(
+        zenchefId: string,
+        apiToken: string
+    ): Promise<SeatingAreaModel[]> {
+        try {
+            const response = await firstValueFrom(
+                this.httpService.get<ZenchefShiftsResponse>(
+                    `${this.baseUrlV2}/restaurants/${zenchefId}/shifts`,
+                    {
+                        headers: this.buildHeaders(apiToken, zenchefId),
+                    }
+                )
+            );
+
+            // Collect all rooms from all shifts and deduplicate by room id
+            const roomsMap = new Map<number, SeatingAreaModel>();
+
+            for (const shift of response.data.data) {
+                for (const room of shift.rooms) {
+                    if (!roomsMap.has(room.id)) {
+                        roomsMap.set(room.id, {
+                            id: room.id,
+                            name: room.name,
+                            description: room.description,
+                            max_capacity: room.capacity,
+                        });
+                    }
+                }
+            }
+
+            return Array.from(roomsMap.values());
+        } catch (error: any) {
+            this.logger.error(
+                `Error fetching seating areas: ${error.message}`,
+                error.stack
+            );
+            throw new GeneralError(
+                `Failed to fetch seating areas: ${error.message}`
+            );
+        }
     }
 
     /**

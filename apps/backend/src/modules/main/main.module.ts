@@ -1,10 +1,11 @@
 import { Module } from "@nestjs/common";
 import { LoggerModule } from "nestjs-pino";
 import { ConfigModule } from "@nestjs/config";
+import { TerminusModule } from "@nestjs/terminus";
 
+import { HttpModule } from "@repo/common";
 import { DatabaseModule } from "@repo/database";
 
-import { MainService } from "./main.service";
 import { MainController } from "./main.controller";
 import { UserModule } from "../user/user.module";
 import { AuthModule } from "../auth/auth.module";
@@ -16,6 +17,7 @@ import { ReservationsModule } from "../reservations/reservations.module";
 
 @Module({
     imports: [
+        HttpModule,
         AuthModule,
         UserModule,
         RestaurantModule,
@@ -25,21 +27,15 @@ import { ReservationsModule } from "../reservations/reservations.module";
         ReservationsModule,
         DatabaseModule.forRoot(),
 
+        TerminusModule,
         ConfigModule.forRoot({
             isGlobal: true,
         }),
         LoggerModule.forRoot({
             pinoHttp: {
-                // serializers: {
-                //     req: (req) => ({
-                //         id: req.id,
-                //         method: req.method,
-                //         url: req.url,
-                //     }),
-                //     res: (res) => ({
-                //         statusCode: res.statusCode,
-                //     }),
-                // },
+                autoLogging: {
+                    ignore: (req) => req?.url === "/",
+                },
                 transport: {
                     target: "pino-pretty",
                     options: {
@@ -52,6 +48,5 @@ import { ReservationsModule } from "../reservations/reservations.module";
         }),
     ],
     controllers: [MainController],
-    providers: [MainService],
 })
 export class MainModule {}

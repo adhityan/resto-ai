@@ -8,3 +8,4 @@ export * from "./create-reservation-request.model";
 export * from "./update-reservation-request.model";
 export * from "./cancel-reservation-response.model";
 export * from "./booking-object.model";
+export * from "./seating-area.model";

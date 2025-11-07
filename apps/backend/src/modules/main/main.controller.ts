@@ -1,15 +1,31 @@
 import { Controller, Get } from "@nestjs/common";
+import {
+    HealthCheckService,
+    PrismaHealthIndicator,
+    HealthCheck,
+} from "@nestjs/terminus";
 
 import { Public } from "../../decorators/public.decorator";
-import { MainService } from "./main.service";
+import { DatabaseService } from "@repo/database";
 
 @Controller("/")
 export class MainController {
-    constructor(private readonly appService: MainService) {}
+    constructor(
+        private health: HealthCheckService,
+        private prismaHealthIndicator: PrismaHealthIndicator,
+        private databaseService: DatabaseService
+    ) {}
 
     @Get()
     @Public()
-    healthCheck(): string {
-        return this.appService.healthCheck();
+    @HealthCheck()
+    healthCheck() {
+        return this.health.check([
+            () =>
+                this.prismaHealthIndicator.pingCheck(
+                    "database",
+                    this.databaseService
+                ),
+        ]);
     }
 }
