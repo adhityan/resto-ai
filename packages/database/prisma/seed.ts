@@ -1,34 +1,68 @@
-import { PrismaClient } from "../generated/prisma";
+import { PrismaClient, UserType } from "../generated/prisma";
+import { CryptoUtils } from "@repo/utils";
 
 const prisma = new PrismaClient();
 
-async function main() {}
+async function main() {
+    // Seed super admin user
+    const superAdminEmail = "me@adhityan.com";
+    const superAdminName = "Adhityan";
+    const superAdminPassword = process.env.SUPER_ADMIN_PASSWORD;
+
+    if (!superAdminPassword) {
+        throw new Error(
+            "SUPER_ADMIN_PASSWORD environment variable is required"
+        );
+    }
+
+    console.log("Seeding super admin user...");
+    const passwordHash = CryptoUtils.encryptPassword(superAdminPassword, 10);
+
+    const user = await prisma.user.upsert({
+        where: { email: superAdminEmail },
+        update: {},
+        create: {
+            email: superAdminEmail,
+            name: superAdminName,
+            passwordHash,
+            type: UserType.SUPER_ADMIN,
+            isActive: true,
+        },
+    });
+
+    console.log("Super admin user seeded successfully!");
+    console.log(`Email: ${user.email}`);
+    console.log(`Name: ${user.name}`);
+    console.log(`Type: ${user.type}`);
+
+    // Seed restaurant
+    console.log("Seeding restaurant...");
+    const id = "353816f8-4204-406c-842f-529347706874";
+    const restaurantPhone = "+33753549003";
+    const restaurantName = "Miri Mary";
+    const zenchefId = "378114";
+    const apiToken = "e3469030-41fc-4ec3-8754-10f333fde782";
+
+    const restaurant = await prisma.restaurant.upsert({
+        where: { id },
+        update: {},
+        create: {
+            id,
+            name: restaurantName,
+            incomingPhoneNumber: restaurantPhone,
+            zenchefId,
+            apiToken,
+        },
+    });
+
+    console.log("Restaurant seeded successfully!");
+    console.log(`Name: ${restaurant.name}`);
+    console.log(`Phone: ${restaurant.incomingPhoneNumber}`);
+    console.log(`Zenchef ID: ${restaurant.zenchefId}`);
+}
 
 main()
     .then(async () => {
-        const id = "353816f8-4204-406c-842f-529347706874";
-        const restaurantPhone = "+33753549003";
-        const restaurantName = "Miri Mary";
-        const zenchefId = "378114";
-        const apiToken = "e3469030-41fc-4ec3-8754-10f333fde782";
-
-        const restaurant = await prisma.restaurant.upsert({
-            where: { id },
-            update: {},
-            create: {
-                id,
-                name: restaurantName,
-                incomingPhoneNumber: restaurantPhone,
-                zenchefId,
-                apiToken,
-            },
-        });
-
-        console.log("Restaurant seeded successfully!");
-        console.log(`Name: ${restaurant.name}`);
-        console.log(`Phone: ${restaurant.incomingPhoneNumber}`);
-        console.log(`Zenchef ID: ${restaurant.zenchefId}`);
-
         await prisma.$disconnect();
     })
     .catch(async (e) => {

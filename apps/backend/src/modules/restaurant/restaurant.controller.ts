@@ -79,4 +79,16 @@ export class RestaurantController {
         );
         return new RestaurantModel(restaurant);
     }
+
+    @OnlyAdmin()
+    @Post(":id/sync-seating-areas")
+    @ApiOkResponse({
+        description: "Seating areas synced successfully",
+    })
+    public async syncSeatingAreas(
+        @Param("id") id: string
+    ): Promise<{ message: string }> {
+        await this.restaurantService.syncSeatingAreas(id);
+        return { message: "Seating areas synced successfully" };
+    }
 }

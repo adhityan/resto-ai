@@ -22,6 +22,21 @@ export interface ZenchefShiftSlot {
 }
 
 /**
+ * Represents an offer within a shift
+ */
+export interface ZenchefOffer {
+    id: number;
+    name: string;
+    name_translations?: Record<string, string>;
+    description?: Record<string, string>;
+    is_private: boolean;
+    config: {
+        min_pax_available: number;
+        max_pax_available: number;
+    };
+}
+
+/**
  * Represents a shift (e.g., Lunch, Dinner) with its time slots
  */
 export interface ZenchefShift {
@@ -36,6 +51,7 @@ export interface ZenchefShift {
     blocked_tables: number[];
     bookable_rooms: number[];
     shift_slots: ZenchefShiftSlot[];
+    offers?: ZenchefOffer[];
 }
 
 /**

@@ -11,6 +11,7 @@ import { Reflector } from "@nestjs/core";
 import { AuthService } from "../auth.service";
 import { AuthenticatedRequest } from "src/types/request";
 import { IS_PUBLIC_KEY } from "src/decorators/public.decorator";
+import { UserType } from "@repo/database";
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -55,7 +56,13 @@ export class AuthGuard implements CanActivate {
                 const payload = await this.authService.parseTokenData(token);
                 request["loginPayload"] = payload;
 
-                if (role === payload.userType) return true;
+                if (role === "ADMIN" && payload.userType === UserType.APP_ADMIN)
+                    return true;
+                else if (
+                    role === "ADMIN" &&
+                    payload.userType === UserType.SUPER_ADMIN
+                )
+                    return true;
                 else {
                     this.logger.warn(
                         `API Access role mismatch. Received ${payload.userType} for API locked with ${role}`

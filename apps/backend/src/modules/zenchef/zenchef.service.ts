@@ -19,6 +19,7 @@ import {
     ZenchefBookingSearchResponse,
     ZenchefChangeTimePayload,
     ZenchefCreateBookingPayload,
+    ZenchefShift,
     ZenchefShiftsResponse,
 } from "../../types/zenchef";
 import { ObjectUtils } from "@repo/utils";
@@ -94,11 +95,90 @@ export class ZenchefService {
     }
 
     /**
+     * Maps Zenchef room IDs to database seating areas
+     */
+    private mapRoomIdsToSeatingAreas(
+        roomIds: number[],
+        restaurantSeatingAreas: Array<{
+            id: string;
+            zenchefRoomId: number;
+            name: string;
+            description: string | null;
+            maxCapacity: number;
+        }>
+    ): Array<{
+        zenchefRoomId: number;
+        name: string;
+        description: string | null;
+        maxCapacity: number;
+    }> {
+        return roomIds
+            .map((roomId) => {
+                const area = restaurantSeatingAreas.find(
+                    (a) => a.zenchefRoomId === roomId
+                );
+                if (!area) return null;
+                return {
+                    zenchefRoomId: roomId,
+                    name: area.name,
+                    description: area.description,
+                    maxCapacity: area.maxCapacity,
+                };
+            })
+            .filter(
+                (
+                    area
+                ): area is {
+                    zenchefRoomId: number;
+                    name: string;
+                    description: string | null;
+                    maxCapacity: number;
+                } => area !== null
+            );
+    }
+
+    /**
+     * Extracts and filters offers from shifts
+     */
+    private extractOffers(
+        shifts: ZenchefShift[],
+        numberOfPeople: number
+    ): Array<{ id: number; name: string; description: string }> {
+        const offersMap = new Map<
+            number,
+            { id: number; name: string; description: string }
+        >();
+
+        for (const shift of shifts) {
+            if (!shift.offers) continue;
+
+            for (const offer of shift.offers) {
+                // Filter: must not be private, and numberOfPeople must be within range
+                if (
+                    !offer.is_private &&
+                    numberOfPeople >= offer.config.min_pax_available &&
+                    numberOfPeople <= offer.config.max_pax_available &&
+                    !offersMap.has(offer.id)
+                ) {
+                    offersMap.set(offer.id, {
+                        id: offer.id,
+                        name: offer.name,
+                        description: offer.description?.en || "",
+                    });
+                }
+            }
+        }
+
+        return Array.from(offersMap.values());
+    }
+
+    /**
      * Checks availability for a given date, number of people, and optional time/seating preference
      * @param zenchefId - Restaurant Zenchef ID
      * @param apiToken - Restaurant API token
      * @param date - Date to check (ISO format YYYY-MM-DD)
      * @param numberOfPeople - Number of guests
+     * @param restaurantSeatingAreas - Seating areas from database with their zenchefRoomId mappings
      * @param time - Optional specific time to check (HH:MM format)
      * @param seatingPreference - Optional seating area preference
      * @returns Availability information including available slots and next available date
@@ -108,6 +188,13 @@ export class ZenchefService {
         apiToken: string,
         date: string,
         numberOfPeople: number,
+        restaurantSeatingAreas: Array<{
+            id: string;
+            zenchefRoomId: number;
+            name: string;
+            description: string | null;
+            maxCapacity: number;
+        }>,
         time?: string,
         seatingPreference?: string
     ): Promise<Omit<AvailabilityResponseModel, "description">> {
@@ -133,7 +220,8 @@ export class ZenchefService {
                     zenchefId,
                     apiToken,
                     date,
-                    numberOfPeople
+                    numberOfPeople,
+                    restaurantSeatingAreas
                 );
             }
 
@@ -159,9 +247,10 @@ export class ZenchefService {
                 }
             }
 
-            // Collect available slots
-            const availableSlots: string[] = [];
+            // Collect available slots with seating areas
+            const availableSlotsMap = new Map<string, Set<number>>();
             let isRequestedSlotAvailable: boolean | undefined = undefined;
+            let requestedTimeRoomIds: number[] = [];
 
             for (const shift of shifts) {
                 for (const slot of shift.shift_slots) {
@@ -170,11 +259,30 @@ export class ZenchefService {
                         !slot.marked_as_full &&
                         slot.possible_guests.includes(numberOfPeople)
                     ) {
-                        availableSlots.push(slot.name);
+                        // Get available room IDs for this slot
+                        const roomIds =
+                            slot.available_rooms[numberOfPeople.toString()] ||
+                            [];
+
+                        // Only include slots that have rooms in our database
+                        const mappedRooms = this.mapRoomIdsToSeatingAreas(
+                            roomIds,
+                            restaurantSeatingAreas
+                        );
+                        if (mappedRooms.length === 0) continue;
+
+                        // Add to available slots
+                        if (!availableSlotsMap.has(slot.name)) {
+                            availableSlotsMap.set(slot.name, new Set());
+                        }
+                        roomIds.forEach((id) =>
+                            availableSlotsMap.get(slot.name)!.add(id)
+                        );
 
                         // Check if this is the requested time
                         if (time && slot.name === time) {
                             isRequestedSlotAvailable = true;
+                            requestedTimeRoomIds = roomIds;
                         }
                     }
                 }
@@ -185,8 +293,32 @@ export class ZenchefService {
                 isRequestedSlotAvailable = false;
             }
 
+            // Extract offers
+            const offers = this.extractOffers(shifts, numberOfPeople);
+
+            // Map available slots to TimeSlotModel
+            const otherAvailableSlotsForThatDay = Array.from(
+                availableSlotsMap.entries()
+            )
+                .map(([slotTime, roomIdsSet]) => ({
+                    time: slotTime,
+                    seatingAreas: this.mapRoomIdsToSeatingAreas(
+                        Array.from(roomIdsSet),
+                        restaurantSeatingAreas
+                    ),
+                }))
+                .filter((slot) => slot.seatingAreas.length > 0);
+
+            // Map requested time seating areas
+            const availableRoomTypes = time
+                ? this.mapRoomIdsToSeatingAreas(
+                      requestedTimeRoomIds,
+                      restaurantSeatingAreas
+                  )
+                : undefined;
+
             // If no availability, search for next date
-            if (availableSlots.length === 0) {
+            if (otherAvailableSlotsForThatDay.length === 0) {
                 // Check for waiting list
                 const hasWaitingList = shifts.some(
                     (shift) => shift.waitlist_total > 0
@@ -198,6 +330,8 @@ export class ZenchefService {
                     );
                     return {
                         isRequestedSlotAvailable,
+                        offers,
+                        availableRoomTypes,
                         otherAvailableSlotsForThatDay: [],
                         nextAvailableDate: null,
                     };
@@ -209,13 +343,16 @@ export class ZenchefService {
                     apiToken,
                     date,
                     numberOfPeople,
+                    restaurantSeatingAreas,
                     isRequestedSlotAvailable
                 );
             }
 
             return {
                 isRequestedSlotAvailable,
-                otherAvailableSlotsForThatDay: availableSlots,
+                offers,
+                availableRoomTypes,
+                otherAvailableSlotsForThatDay,
                 nextAvailableDate: null,
             };
         } catch (error: any) {
@@ -237,6 +374,13 @@ export class ZenchefService {
         apiToken: string,
         startDate: string,
         numberOfPeople: number,
+        restaurantSeatingAreas: Array<{
+            id: string;
+            zenchefRoomId: number;
+            name: string;
+            description: string | null;
+            maxCapacity: number;
+        }>,
         isRequestedSlotAvailable?: boolean
     ): Promise<Omit<AvailabilityResponseModel, "description">> {
         const startDateObj = new Date(startDate);
@@ -275,10 +419,42 @@ export class ZenchefService {
                         );
 
                         if (hasAvailability) {
+                            // Get room IDs for the first available slot
+                            const firstSlot = shift.shift_slots.find(
+                                (slot) =>
+                                    !slot.closed &&
+                                    !slot.marked_as_full &&
+                                    slot.possible_guests.includes(
+                                        numberOfPeople
+                                    )
+                            );
+
+                            const roomIds =
+                                firstSlot?.available_rooms[
+                                    numberOfPeople.toString()
+                                ] || [];
+                            const seatingAreas = this.mapRoomIdsToSeatingAreas(
+                                roomIds,
+                                restaurantSeatingAreas
+                            );
+
+                            // Extract offers for this date
+                            const offers = this.extractOffers(
+                                [shift],
+                                numberOfPeople
+                            );
+
                             return {
                                 isRequestedSlotAvailable,
+                                offers,
                                 otherAvailableSlotsForThatDay: [],
-                                nextAvailableDate: dayData.date,
+                                nextAvailableDate:
+                                    seatingAreas.length > 0
+                                        ? {
+                                              date: dayData.date,
+                                              seatingAreas,
+                                          }
+                                        : null,
                             };
                         }
                     }
@@ -294,6 +470,7 @@ export class ZenchefService {
         // No availability found in next 30 days
         return {
             isRequestedSlotAvailable,
+            offers: [],
             otherAvailableSlotsForThatDay: [],
             nextAvailableDate: null,
         };

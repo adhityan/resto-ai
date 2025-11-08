@@ -23,11 +23,13 @@ export class ReservationsService {
     ) {}
 
     /**
-     * Helper method to get restaurant credentials
+     * Helper method to get restaurant credentials and settings
      */
-    private async getRestaurantCredentials(
-        restaurantId: string
-    ): Promise<{ zenchefId: string; apiToken: string }> {
+    private async getRestaurantCredentials(restaurantId: string): Promise<{
+        zenchefId: string;
+        apiToken: string;
+        maxEscalationSeating: number;
+    }> {
         const restaurant =
             await this.restaurantService.findRestaurantById(restaurantId);
 
@@ -44,6 +46,7 @@ export class ReservationsService {
         return {
             zenchefId: restaurant.zenchefId,
             apiToken: restaurant.apiToken,
+            maxEscalationSeating: restaurant.maxEscalationSeating,
         };
     }
 
@@ -67,50 +70,163 @@ export class ReservationsService {
             `Checking availability for restaurant "${restaurantId}" on "${date}" for "${numberOfPeople}" people${time ? ` at "${time}"` : ""}${seatingPreference ? ` (preference: "${seatingPreference}")` : ""}`
         );
 
-        const { zenchefId, apiToken } =
+        const { zenchefId, apiToken, maxEscalationSeating } =
             await this.getRestaurantCredentials(restaurantId);
+
+        // Check if party size requires manager escalation
+        if (numberOfPeople >= maxEscalationSeating) {
+            this.logger.log(
+                `Party size ${numberOfPeople} >= ${maxEscalationSeating}, requires manager escalation`
+            );
+
+            const description =
+                `RESERVATION REQUIRES MANAGER CONTACT\n\n` +
+                `Party Size: ${numberOfPeople} guests\n` +
+                `Requested Date: ${date}${time ? ` at ${time}` : ""}\n\n` +
+                `IMPORTANT: Reservations for ${maxEscalationSeating} or more guests cannot be made through the automated system. ` +
+                `The customer must contact the restaurant manager directly to arrange this reservation.\n\n` +
+                `Please inform the customer that they need to speak with a manager for large party bookings (${maxEscalationSeating}+ guests). ` +
+                `The manager will be able to accommodate their needs and discuss special arrangements for larger groups.`;
+
+            return {
+                isRequestedSlotAvailable: false,
+                offers: [],
+                otherAvailableSlotsForThatDay: [],
+                nextAvailableDate: null,
+                description,
+            };
+        }
+
+        // Fetch seating areas from database and filter by maxEscalationSeating
+        const allSeatingAreas =
+            await this.restaurantService.getSeatingAreasByRestaurantId(
+                restaurantId
+            );
+        const seatingAreas = allSeatingAreas.filter(
+            (area) => area.maxCapacity < maxEscalationSeating
+        );
 
         const availability = await this.zenchefService.checkAvailability(
             zenchefId,
             apiToken,
             date,
             numberOfPeople,
+            seatingAreas,
             time,
             seatingPreference
         );
 
         console.log("availability", availability);
-        // Generate human-readable description
-        let description = `Availability check for ${numberOfPeople} people on ${date}`;
+        // Build structured description for LLM
+        const parts: string[] = [];
 
-        if (time) {
-            description += ` at ${time}`;
-        }
-        if (seatingPreference) {
-            description += ` in ${seatingPreference} seating area`;
-        }
-        description += ". ";
+        // Header: Basic request info
+        parts.push(
+            `AVAILABILITY CHECK: ${numberOfPeople} guests on ${date}${time ? ` at ${time}` : ""}${seatingPreference ? ` (shift preference: "${seatingPreference}")` : ""}`
+        );
 
-        if (availability.isRequestedSlotAvailable === true) {
-            description += `The requested time slot is AVAILABLE.`;
-        } else if (availability.isRequestedSlotAvailable === false) {
-            description += `The requested time slot is NOT AVAILABLE.`;
+        // Section 1: Requested time availability (if time was specified)
+        if (time !== undefined) {
+            if (availability.isRequestedSlotAvailable === true) {
+                parts.push(`\nREQUESTED TIME STATUS: AVAILABLE at ${time}`);
+
+                if (
+                    availability.availableRoomTypes &&
+                    availability.availableRoomTypes.length > 0
+                ) {
+                    parts.push(`SEATING OPTIONS FOR ${time}:`);
+                    availability.availableRoomTypes.forEach((room, idx) => {
+                        parts.push(
+                            `  ${idx + 1}. ${room.name} (Zenchef Room ID: ${room.zenchefRoomId}, Capacity: ${room.maxCapacity}${room.description ? `, ${room.description}` : ""})`
+                        );
+                    });
+                } else {
+                    parts.push(
+                        `WARNING: Time is available but no configured seating areas found in system.`
+                    );
+                }
+            } else {
+                parts.push(`\nREQUESTED TIME STATUS: NOT AVAILABLE at ${time}`);
+            }
         }
 
+        // Section 2: Available offers
+        if (availability.offers.length > 0) {
+            parts.push(
+                `\nAVAILABLE OFFERS (${availability.offers.length} matching your party size):`
+            );
+            availability.offers.forEach((offer, idx) => {
+                parts.push(`  ${idx + 1}. "${offer.name}" (ID: ${offer.id})`);
+                if (offer.description) {
+                    // Truncate long descriptions
+                    const desc =
+                        offer.description.length > 100
+                            ? offer.description.substring(0, 97) + "..."
+                            : offer.description;
+                    parts.push(`     ${desc}`);
+                }
+            });
+        } else {
+            parts.push(`\nAVAILABLE OFFERS: None matching your party size`);
+        }
+
+        // Section 3: Other available time slots for the day
         if (availability.otherAvailableSlotsForThatDay.length > 0) {
-            description += ` Other available time slots for this date: ${availability.otherAvailableSlotsForThatDay.join(", ")}.`;
-        } else if (availability.isRequestedSlotAvailable !== true) {
-            description += ` No other time slots are available on this date.`;
+            parts.push(
+                `\nOTHER AVAILABLE TIMES ON ${date} (${availability.otherAvailableSlotsForThatDay.length} slots):`
+            );
+            availability.otherAvailableSlotsForThatDay.forEach((slot) => {
+                const seatingList =
+                    slot.seatingAreas.length > 0
+                        ? slot.seatingAreas.map((s) => s.name).join(", ")
+                        : "No configured seating areas";
+                parts.push(
+                    `  - ${slot.time}: ${slot.seatingAreas.length} seating area(s) [${seatingList}]`
+                );
+            });
+        } else {
+            parts.push(`\nOTHER AVAILABLE TIMES ON ${date}: None available`);
         }
 
+        // Section 4: Next available date (if current day has no availability)
         if (availability.nextAvailableDate) {
-            description += ` Next available date: ${availability.nextAvailableDate}.`;
-        } else if (
-            availability.otherAvailableSlotsForThatDay.length === 0 &&
-            availability.isRequestedSlotAvailable !== true
-        ) {
-            description += ` No future availability found in the next 30 days.`;
+            parts.push(
+                `\nNEXT AVAILABLE DATE: ${availability.nextAvailableDate.date}`
+            );
+            if (availability.nextAvailableDate.seatingAreas.length > 0) {
+                parts.push(
+                    `SEATING AREAS ON ${availability.nextAvailableDate.date}:`
+                );
+                availability.nextAvailableDate.seatingAreas.forEach(
+                    (room, idx) => {
+                        parts.push(
+                            `  ${idx + 1}. ${room.name} (Zenchef Room ID: ${room.zenchefRoomId}, Capacity: ${room.maxCapacity})`
+                        );
+                    }
+                );
+            } else {
+                parts.push(
+                    `WARNING: Date available but no configured seating areas found.`
+                );
+            }
         }
+
+        // Section 5: Important notes
+        parts.push(`\nIMPORTANT NOTES:`);
+        parts.push(
+            `- The "seatingPreference" parameter filters shifts by name only (e.g., "Lunch", "Dinner")`
+        );
+        parts.push(
+            `- Actual seating area availability is provided in "availableRoomTypes" (for requested time) and "otherAvailableSlotsForThatDay" (per time slot)`
+        );
+        parts.push(
+            `- Use the Zenchef Room ID when making a booking to specify the preferred room`
+        );
+        parts.push(
+            `- Each time slot may have different seating areas available based on restaurant configuration`
+        );
+
+        const description = parts.join("\n");
 
         return {
             ...availability,

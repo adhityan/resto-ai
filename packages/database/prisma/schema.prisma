@@ -23,10 +23,11 @@ enum ItemType {
 }
 
 model Restaurant {
-  id                  String  @id @default(uuid())
-  name                String
-  isActive            Boolean @default(true)
-  incomingPhoneNumber String
+  id                   String  @id @default(uuid())
+  name                 String
+  isActive             Boolean @default(true)
+  incomingPhoneNumber  String
+  maxEscalationSeating Int     @default(12)
 
   zenchefId String @unique
   apiToken  String @unique
@@ -42,14 +43,16 @@ model Restaurant {
 }
 
 model SeatingArea {
-  id          String  @id @default(uuid())
-  name        String
-  description String?
-  maxCapacity Int
+  id            String  @id @default(uuid())
+  name          String
+  description   String?
+  maxCapacity   Int
+  zenchefRoomId Int
 
   restaurantId String
   restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
 
+  @@unique([restaurantId, zenchefRoomId])
   @@index([restaurantId])
 }
 
