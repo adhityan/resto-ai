@@ -55,8 +55,7 @@ export class ReservationsController {
             restaurantId,
             body.date,
             body.numberOfPeople,
-            body.time,
-            body.seatingPreference
+            body.time
         );
     }
 
@@ -122,7 +121,7 @@ export class ReservationsController {
             body.time,
             body.comments,
             body.email,
-            body.seatingPreference
+            body.roomId
         );
     }
 
@@ -150,7 +149,7 @@ export class ReservationsController {
             body.time,
             body.comments,
             body.email,
-            body.seatingPreference
+            body.roomId
         );
     }
 

@@ -56,18 +56,16 @@ export class ReservationsService {
      * @param date - Date to check (ISO format YYYY-MM-DD)
      * @param numberOfPeople - Number of guests
      * @param time - Optional specific time to check (HH:MM format)
-     * @param seatingPreference - Optional seating area preference
      * @returns Availability information with human-readable description
      */
     async checkAvailability(
         restaurantId: string,
         date: string,
         numberOfPeople: number,
-        time?: string,
-        seatingPreference?: string
+        time?: string
     ): Promise<AvailabilityResponseModel> {
         this.logger.log(
-            `Checking availability for restaurant "${restaurantId}" on "${date}" for "${numberOfPeople}" people${time ? ` at "${time}"` : ""}${seatingPreference ? ` (preference: "${seatingPreference}")` : ""}`
+            `Checking availability for restaurant "${restaurantId}" on "${date}" for "${numberOfPeople}" people${time ? ` at "${time}"` : ""}`
         );
 
         const { zenchefId, apiToken, maxEscalationSeating } =
@@ -88,13 +86,13 @@ export class ReservationsService {
                 `Please inform the customer that they need to speak with a manager for large party bookings (${maxEscalationSeating}+ guests). ` +
                 `The manager will be able to accommodate their needs and discuss special arrangements for larger groups.`;
 
-            return {
+            return new AvailabilityResponseModel({
                 isRequestedSlotAvailable: false,
                 offers: [],
                 otherAvailableSlotsForThatDay: [],
                 nextAvailableDate: null,
                 description,
-            };
+            });
         }
 
         // Fetch seating areas from database and filter by maxEscalationSeating
@@ -112,8 +110,7 @@ export class ReservationsService {
             date,
             numberOfPeople,
             seatingAreas,
-            time,
-            seatingPreference
+            time
         );
 
         console.log("availability", availability);
@@ -122,7 +119,7 @@ export class ReservationsService {
 
         // Header: Basic request info
         parts.push(
-            `AVAILABILITY CHECK: ${numberOfPeople} guests on ${date}${time ? ` at ${time}` : ""}${seatingPreference ? ` (shift preference: "${seatingPreference}")` : ""}`
+            `AVAILABILITY CHECK: ${numberOfPeople} guests on ${date}${time ? ` at ${time}` : ""}`
         );
 
         // Section 1: Requested time availability (if time was specified)
@@ -131,15 +128,17 @@ export class ReservationsService {
                 parts.push(`\nREQUESTED TIME STATUS: AVAILABLE at ${time}`);
 
                 if (
-                    availability.availableRoomTypes &&
-                    availability.availableRoomTypes.length > 0
+                    availability.availableRoomTypesOnRequestedTime &&
+                    availability.availableRoomTypesOnRequestedTime.length > 0
                 ) {
                     parts.push(`SEATING OPTIONS FOR ${time}:`);
-                    availability.availableRoomTypes.forEach((room, idx) => {
-                        parts.push(
-                            `  ${idx + 1}. ${room.name} (Zenchef Room ID: ${room.zenchefRoomId}, Capacity: ${room.maxCapacity}${room.description ? `, ${room.description}` : ""})`
-                        );
-                    });
+                    availability.availableRoomTypesOnRequestedTime.forEach(
+                        (room, idx) => {
+                            parts.push(
+                                `  ${idx + 1}. ${room.name} (ID: ${room.id}, Capacity: ${room.maxCapacity}${room.description ? `, ${room.description}` : ""})`
+                            );
+                        }
+                    );
                 } else {
                     parts.push(
                         `WARNING: Time is available but no configured seating areas found in system.`
@@ -151,24 +150,24 @@ export class ReservationsService {
         }
 
         // Section 2: Available offers
-        if (availability.offers.length > 0) {
-            parts.push(
-                `\nAVAILABLE OFFERS (${availability.offers.length} matching your party size):`
-            );
-            availability.offers.forEach((offer, idx) => {
-                parts.push(`  ${idx + 1}. "${offer.name}" (ID: ${offer.id})`);
-                if (offer.description) {
-                    // Truncate long descriptions
-                    const desc =
-                        offer.description.length > 100
-                            ? offer.description.substring(0, 97) + "..."
-                            : offer.description;
-                    parts.push(`     ${desc}`);
-                }
-            });
-        } else {
-            parts.push(`\nAVAILABLE OFFERS: None matching your party size`);
-        }
+        // if (availability.offers.length > 0) {
+        //     parts.push(
+        //         `\nAVAILABLE OFFERS (${availability.offers.length} matching your party size):`
+        //     );
+        //     availability.offers.forEach((offer, idx) => {
+        //         parts.push(`  ${idx + 1}. "${offer.name}" (ID: ${offer.id})`);
+        //         if (offer.description) {
+        //             // Truncate long descriptions
+        //             const desc =
+        //                 offer.description.length > 100
+        //                     ? offer.description.substring(0, 97) + "..."
+        //                     : offer.description;
+        //             parts.push(`     ${desc}`);
+        //         }
+        //     });
+        // } else {
+        //     parts.push(`\nAVAILABLE OFFERS: None matching your party size`);
+        // }
 
         // Section 3: Other available time slots for the day
         if (availability.otherAvailableSlotsForThatDay.length > 0) {
@@ -200,7 +199,7 @@ export class ReservationsService {
                 availability.nextAvailableDate.seatingAreas.forEach(
                     (room, idx) => {
                         parts.push(
-                            `  ${idx + 1}. ${room.name} (Zenchef Room ID: ${room.zenchefRoomId}, Capacity: ${room.maxCapacity})`
+                            `  ${idx + 1}. ${room.name} (ID: ${room.id}, Capacity: ${room.maxCapacity})`
                         );
                     }
                 );
@@ -214,13 +213,10 @@ export class ReservationsService {
         // Section 5: Important notes
         parts.push(`\nIMPORTANT NOTES:`);
         parts.push(
-            `- The "seatingPreference" parameter filters shifts by name only (e.g., "Lunch", "Dinner")`
+            `- Seating area availability is provided in "availableRoomTypesOnRequestedTime" (for requested time) and "otherAvailableSlotsForThatDay" (per time slot)`
         );
         parts.push(
-            `- Actual seating area availability is provided in "availableRoomTypes" (for requested time) and "otherAvailableSlotsForThatDay" (per time slot)`
-        );
-        parts.push(
-            `- Use the Zenchef Room ID when making a booking to specify the preferred room`
+            `- Use the seating area ID when making a booking to specify the preferred room`
         );
         parts.push(
             `- Each time slot may have different seating areas available based on restaurant configuration`
@@ -228,10 +224,10 @@ export class ReservationsService {
 
         const description = parts.join("\n");
 
-        return {
+        return new AvailabilityResponseModel({
             ...availability,
             description,
-        };
+        });
     }
 
     /**
@@ -286,10 +282,10 @@ export class ReservationsService {
             description += `Details: ${summaries.join("; ")}.`;
         }
 
-        return {
+        return new ReservationListResponseModel({
             reservations,
             description,
-        };
+        });
     }
 
     /**
@@ -352,10 +348,10 @@ export class ReservationsService {
             description += `Details: ${summaries.join("; ")}.`;
         }
 
-        return {
+        return new ReservationListResponseModel({
             reservations,
             description,
-        };
+        });
     }
 
     /**
@@ -368,7 +364,7 @@ export class ReservationsService {
      * @param time - Reservation time (HH:MM format)
      * @param comments - Optional comments
      * @param email - Optional customer email
-     * @param seatingPreference - Optional seating area preference
+     * @param roomId - Optional seating area ID
      * @returns Complete booking object with booking ID and human-readable description
      */
     async createReservation(
@@ -380,10 +376,10 @@ export class ReservationsService {
         time: string,
         comments?: string,
         email?: string,
-        seatingPreference?: string
+        roomId?: string
     ): Promise<BookingObjectModel> {
         this.logger.log(
-            `For restaurant "${restaurantId}", creating reservation for "${numberOfCustomers}" people on "${date}" at "${time}" in "${seatingPreference}" seating area with name "${name}" and phone "${phone}". Optional comments: "${comments}". Optional email: "${email}".`
+            `For restaurant "${restaurantId}", creating reservation for "${numberOfCustomers}" people on "${date}" at "${time}" with name "${name}" and phone "${phone}". Optional comments: "${comments}". Optional email: "${email}". Optional roomId: "${roomId}".`
         );
 
         // TEMPORARY TEST RESPONSE - REMOVE AFTER TESTING
@@ -403,6 +399,18 @@ export class ReservationsService {
         const { zenchefId, apiToken } =
             await this.getRestaurantCredentials(restaurantId);
 
+        let zenchefRoomId: number | undefined;
+        if (roomId) {
+            const seatingAreas =
+                await this.restaurantService.getSeatingAreasByRestaurantId(
+                    restaurantId
+                );
+            const seatingArea = seatingAreas.find((area) => area.id === roomId);
+            if (seatingArea) {
+                zenchefRoomId = seatingArea.zenchefRoomId;
+            }
+        }
+
         const booking = await this.zenchefService.createReservation(
             zenchefId,
             apiToken,
@@ -413,7 +421,7 @@ export class ReservationsService {
             time,
             comments,
             email,
-            seatingPreference
+            zenchefRoomId
         );
 
         console.log("createReservation", booking);
@@ -426,19 +434,15 @@ export class ReservationsService {
             description += `, email: ${booking.email}`;
         }
         description += `). `;
-        description += `Reservation: ${booking.numberOfCustomers} people on ${booking.date} at ${booking.time}`;
-        if (booking.seatingPreference) {
-            description += ` in ${booking.seatingPreference} seating area`;
-        }
-        description += ".";
+        description += `Reservation: ${booking.numberOfCustomers} people on ${booking.date} at ${booking.time}.`;
         if (booking.comments) {
             description += ` Special requests: ${booking.comments}.`;
         }
 
-        return {
+        return new BookingObjectModel({
             ...booking,
             description,
-        };
+        });
     }
 
     /**
@@ -452,7 +456,7 @@ export class ReservationsService {
      * @param time - Reservation time (HH:MM format)
      * @param comments - Optional comments
      * @param email - Optional customer email
-     * @param seatingPreference - Optional seating area preference
+     * @param roomId - Optional seating area ID
      * @returns Updated booking object with human-readable description
      */
     async updateReservation(
@@ -465,10 +469,10 @@ export class ReservationsService {
         time: string,
         comments?: string,
         email?: string,
-        seatingPreference?: string
+        roomId?: string
     ): Promise<BookingObjectModel> {
         this.logger.log(
-            `For restaurant "${restaurantId}", updating reservation "${bookingId}". Number of customers: "${numberOfCustomers}". Phone: "${phone}". Name: "${name}". Date: "${date}". Time: "${time}". Optional comments: "${comments}". Optional email: "${email}". Optional seating preference: "${seatingPreference}".`
+            `For restaurant "${restaurantId}", updating reservation "${bookingId}". Number of customers: "${numberOfCustomers}". Phone: "${phone}". Name: "${name}". Date: "${date}". Time: "${time}". Optional comments: "${comments}". Optional email: "${email}". Optional roomId: "${roomId}".`
         );
 
         // // TEMPORARY TEST RESPONSE - REMOVE AFTER TESTING
@@ -488,6 +492,18 @@ export class ReservationsService {
         const { zenchefId, apiToken } =
             await this.getRestaurantCredentials(restaurantId);
 
+        let zenchefRoomId: number | undefined;
+        if (roomId) {
+            const seatingAreas =
+                await this.restaurantService.getSeatingAreasByRestaurantId(
+                    restaurantId
+                );
+            const seatingArea = seatingAreas.find((area) => area.id === roomId);
+            if (seatingArea) {
+                zenchefRoomId = seatingArea.zenchefRoomId;
+            }
+        }
+
         const booking = await this.zenchefService.updateReservation(
             zenchefId,
             apiToken,
@@ -499,7 +515,7 @@ export class ReservationsService {
             time,
             comments,
             email,
-            seatingPreference
+            zenchefRoomId
         );
 
         console.log("updateReservation", booking);
@@ -512,19 +528,15 @@ export class ReservationsService {
             description += `, email: ${booking.email}`;
         }
         description += `). `;
-        description += `Updated reservation details: ${booking.numberOfCustomers} people on ${booking.date} at ${booking.time}`;
-        if (booking.seatingPreference) {
-            description += ` in ${booking.seatingPreference} seating area`;
-        }
-        description += ".";
+        description += `Updated reservation details: ${booking.numberOfCustomers} people on ${booking.date} at ${booking.time}.`;
         if (booking.comments) {
             description += ` Special requests: ${booking.comments}.`;
         }
 
-        return {
+        return new BookingObjectModel({
             ...booking,
             description,
-        };
+        });
     }
 
     /**
@@ -558,8 +570,8 @@ export class ReservationsService {
         // Generate human-readable description
         const description = `Successfully cancelled the reservation with Booking ID: ${bookingId}. The reservation has been removed from the system.`;
 
-        return {
+        return new CancelReservationResponseModel({
             description,
-        };
+        });
     }
 }

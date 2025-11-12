@@ -41,13 +41,4 @@ export class CheckAvailabilityRequestModel {
     @IsInt()
     @Min(1, { message: "Number of people must be at least 1" })
     numberOfPeople: number;
-
-    @ApiProperty({
-        description: "Preferred seating area (e.g., 'terrace', 'indoor')",
-        example: "terrace",
-        required: false,
-    })
-    @IsOptional()
-    @IsString()
-    seatingPreference?: string;
 }

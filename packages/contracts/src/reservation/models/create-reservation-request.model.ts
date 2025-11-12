@@ -79,11 +79,11 @@ export class CreateReservationRequestModel {
     email?: string;
 
     @ApiProperty({
-        description: "Preferred seating area",
-        example: "terrace",
+        description: "Seating area/room ID to assign the booking to",
+        example: "uuid-here",
         required: false,
     })
     @IsOptional()
     @IsString()
-    seatingPreference?: string;
+    roomId?: string;
 }

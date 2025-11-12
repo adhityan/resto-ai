@@ -18,4 +18,12 @@ export class ReservationListResponseModel {
             "Searched for reservations with phone number +33612345678. Found 2 reservations. Details: 2025-10-25 (4 people, Confirmed); 2025-10-28 (2 people, Confirmed).",
     })
     description: string;
+
+    constructor(data: {
+        reservations: ReservationItemModel[];
+        description: string;
+    }) {
+        this.reservations = data.reservations;
+        this.description = data.description;
+    }
 }

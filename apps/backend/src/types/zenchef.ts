@@ -188,6 +188,9 @@ export interface ZenchefCreateBookingPayload {
     comment?: string;
     country: string; // ISO code (e.g., "fr", "us")
     status: string; // "confirmed" or "waiting"
+    wish?: {
+        booking_room_id: number;
+    };
 }
 
 /**
@@ -203,6 +206,9 @@ export interface ZenchefUpdateBookingPayload
  */
 export interface ZenchefChangeTimePayload {
     time: string; // "HH:MM" format
+    wish?: {
+        booking_room_id: number;
+    };
 }
 
 /**

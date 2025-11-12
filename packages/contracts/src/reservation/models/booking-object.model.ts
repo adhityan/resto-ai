@@ -55,17 +55,32 @@ export class BookingObjectModel {
     email?: string;
 
     @ApiProperty({
-        description: "Preferred seating area",
-        example: "terrace",
-        required: false,
-    })
-    seatingPreference?: string;
-
-    @ApiProperty({
         description:
             "Human-readable description of the booking operation result for LLM consumption",
         example:
             "Successfully created a new reservation. Booking ID: 1526009. Customer: John Smith (phone: +33612345678). Reservation: 4 people on 2025-10-25 at 19:00.",
     })
     description: string;
+
+    constructor(data: {
+        bookingId: string;
+        numberOfCustomers: number;
+        phone: string;
+        name: string;
+        date: string;
+        time: string;
+        comments?: string;
+        email?: string;
+        description: string;
+    }) {
+        this.bookingId = data.bookingId;
+        this.numberOfCustomers = data.numberOfCustomers;
+        this.phone = data.phone;
+        this.name = data.name;
+        this.date = data.date;
+        this.time = data.time;
+        this.comments = data.comments;
+        this.email = data.email;
+        this.description = data.description;
+    }
 }

@@ -28,4 +28,16 @@ export class SeatingAreaModel {
         example: 50,
     })
     max_capacity: number;
+
+    constructor(data: {
+        id: number;
+        name: string;
+        description: string | null;
+        max_capacity: number;
+    }) {
+        this.id = data.id;
+        this.name = data.name;
+        this.description = data.description;
+        this.max_capacity = data.max_capacity;
+    }
 }

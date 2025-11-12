@@ -1,6 +1,6 @@
 #docker build -t docker.registry.home.adhityan.com/resto-ai-backend -f docker/backend.Dockerfile .
 #docker push docker.registry.home.adhityan.com/resto-ai-backend
-FROM node:24-alpine AS base
+FROM node:25-alpine AS base
 
 # Prep stage: copy minimal files and prune the monorepo to only what's needed for backend
 FROM base AS prep
@@ -90,7 +90,7 @@ COPY --from=prep /repo/out/full/apps/backend ./apps/backend
 RUN npx turbo run build --filter=backend
 
 # Runner stage: minimal runtime image
-FROM node:24-alpine AS runner
+FROM node:25-alpine AS runner
 WORKDIR /repo/apps/backend
 ENV NODE_ENV=production
 

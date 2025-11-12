@@ -11,4 +11,8 @@ export class CancelReservationResponseModel {
             "Successfully cancelled the reservation with Booking ID: 1526009. The reservation has been removed from the system.",
     })
     description: string;
+
+    constructor(data: { description: string }) {
+        this.description = data.description;
+    }
 }

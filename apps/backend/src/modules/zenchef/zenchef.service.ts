@@ -8,8 +8,12 @@ import { addDays, format } from "date-fns";
 import {
     AvailabilityResponseModel,
     BookingObjectModel,
+    NextAvailableDateModel,
+    OfferModel,
     ReservationItemModel,
+    SeatingAreaInfoModel,
     SeatingAreaModel,
+    TimeSlotModel,
 } from "@repo/contracts";
 import { GeneralError } from "../../errors";
 import {
@@ -106,35 +110,21 @@ export class ZenchefService {
             description: string | null;
             maxCapacity: number;
         }>
-    ): Array<{
-        zenchefRoomId: number;
-        name: string;
-        description: string | null;
-        maxCapacity: number;
-    }> {
+    ): SeatingAreaInfoModel[] {
         return roomIds
             .map((roomId) => {
                 const area = restaurantSeatingAreas.find(
                     (a) => a.zenchefRoomId === roomId
                 );
                 if (!area) return null;
-                return {
-                    zenchefRoomId: roomId,
+                return new SeatingAreaInfoModel({
+                    id: area.id,
                     name: area.name,
                     description: area.description,
                     maxCapacity: area.maxCapacity,
-                };
+                });
             })
-            .filter(
-                (
-                    area
-                ): area is {
-                    zenchefRoomId: number;
-                    name: string;
-                    description: string | null;
-                    maxCapacity: number;
-                } => area !== null
-            );
+            .filter((area) => area !== null);
     }
 
     /**
@@ -143,11 +133,8 @@ export class ZenchefService {
     private extractOffers(
         shifts: ZenchefShift[],
         numberOfPeople: number
-    ): Array<{ id: number; name: string; description: string }> {
-        const offersMap = new Map<
-            number,
-            { id: number; name: string; description: string }
-        >();
+    ): OfferModel[] {
+        const offersMap = new Map<number, OfferModel>();
 
         for (const shift of shifts) {
             if (!shift.offers) continue;
@@ -160,11 +147,14 @@ export class ZenchefService {
                     numberOfPeople <= offer.config.max_pax_available &&
                     !offersMap.has(offer.id)
                 ) {
-                    offersMap.set(offer.id, {
-                        id: offer.id,
-                        name: offer.name,
-                        description: offer.description?.en || "",
-                    });
+                    offersMap.set(
+                        offer.id,
+                        new OfferModel({
+                            id: offer.id,
+                            name: offer.name,
+                            description: offer.description?.en || "",
+                        })
+                    );
                 }
             }
         }
@@ -173,14 +163,13 @@ export class ZenchefService {
     }
 
     /**
-     * Checks availability for a given date, number of people, and optional time/seating preference
+     * Checks availability for a given date, number of people, and optional time
      * @param zenchefId - Restaurant Zenchef ID
      * @param apiToken - Restaurant API token
      * @param date - Date to check (ISO format YYYY-MM-DD)
      * @param numberOfPeople - Number of guests
      * @param restaurantSeatingAreas - Seating areas from database with their zenchefRoomId mappings
      * @param time - Optional specific time to check (HH:MM format)
-     * @param seatingPreference - Optional seating area preference
      * @returns Availability information including available slots and next available date
      */
     public async checkAvailability(
@@ -195,8 +184,7 @@ export class ZenchefService {
             description: string | null;
             maxCapacity: number;
         }>,
-        time?: string,
-        seatingPreference?: string
+        time?: string
     ): Promise<Omit<AvailabilityResponseModel, "description">> {
         try {
             // Call availability API for the requested date
@@ -225,27 +213,7 @@ export class ZenchefService {
                 );
             }
 
-            // Filter shifts by seating preference if provided
-            let shifts = dayData.shifts;
-            let triedWithoutPreference = false;
-
-            if (seatingPreference) {
-                const preferredShifts = shifts.filter((shift) =>
-                    shift.name
-                        .toLowerCase()
-                        .includes(seatingPreference.toLowerCase())
-                );
-
-                if (preferredShifts.length > 0) {
-                    shifts = preferredShifts;
-                } else {
-                    // Try without preference
-                    triedWithoutPreference = true;
-                    this.logger.log(
-                        `No shifts found for preference "${seatingPreference}", checking all shifts`
-                    );
-                }
-            }
+            const shifts = dayData.shifts;
 
             // Collect available slots with seating areas
             const availableSlotsMap = new Map<string, Set<number>>();
@@ -300,17 +268,20 @@ export class ZenchefService {
             const otherAvailableSlotsForThatDay = Array.from(
                 availableSlotsMap.entries()
             )
-                .map(([slotTime, roomIdsSet]) => ({
-                    time: slotTime,
-                    seatingAreas: this.mapRoomIdsToSeatingAreas(
-                        Array.from(roomIdsSet),
-                        restaurantSeatingAreas
-                    ),
-                }))
+                .map(
+                    ([slotTime, roomIdsSet]) =>
+                        new TimeSlotModel({
+                            time: slotTime,
+                            seatingAreas: this.mapRoomIdsToSeatingAreas(
+                                Array.from(roomIdsSet),
+                                restaurantSeatingAreas
+                            ),
+                        })
+                )
                 .filter((slot) => slot.seatingAreas.length > 0);
 
             // Map requested time seating areas
-            const availableRoomTypes = time
+            const availableRoomTypesOnRequestedTime = time
                 ? this.mapRoomIdsToSeatingAreas(
                       requestedTimeRoomIds,
                       restaurantSeatingAreas
@@ -331,7 +302,7 @@ export class ZenchefService {
                     return {
                         isRequestedSlotAvailable,
                         offers,
-                        availableRoomTypes,
+                        availableRoomTypesOnRequestedTime,
                         otherAvailableSlotsForThatDay: [],
                         nextAvailableDate: null,
                     };
@@ -351,7 +322,7 @@ export class ZenchefService {
             return {
                 isRequestedSlotAvailable,
                 offers,
-                availableRoomTypes,
+                availableRoomTypesOnRequestedTime,
                 otherAvailableSlotsForThatDay,
                 nextAvailableDate: null,
             };
@@ -450,10 +421,10 @@ export class ZenchefService {
                                 otherAvailableSlotsForThatDay: [],
                                 nextAvailableDate:
                                     seatingAreas.length > 0
-                                        ? {
+                                        ? new NextAvailableDateModel({
                                               date: dayData.date,
                                               seatingAreas,
-                                          }
+                                          })
                                         : null,
                             };
                         }
@@ -615,7 +586,7 @@ export class ZenchefService {
      * @param time - Reservation time (HH:MM format)
      * @param comments - Optional comments
      * @param email - Optional customer email
-     * @param seatingPreference - Optional seating area preference
+     * @param zenchefRoomId - Optional Zenchef room ID
      * @returns Complete booking object with booking ID
      * @throws GeneralError if booking cannot be created
      */
@@ -629,19 +600,12 @@ export class ZenchefService {
         time: string,
         comments?: string,
         email?: string,
-        seatingPreference?: string
+        zenchefRoomId?: number
     ): Promise<Omit<BookingObjectModel, "description">> {
         // Parse name into first and last name
         const nameParts = name.trim().split(/\s+/);
         const firstname = nameParts[0];
         const lastname = nameParts.slice(1).join(" ") || nameParts[0];
-
-        // Combine seating preference into comments if provided
-        let finalComment = comments || "";
-        if (seatingPreference) {
-            finalComment =
-                `${finalComment}${finalComment ? " | " : ""}Seating preference: ${seatingPreference}`.trim();
-        }
 
         const payload: ZenchefCreateBookingPayload = {
             day: date,
@@ -651,10 +615,14 @@ export class ZenchefService {
             lastname,
             phone_number: phone,
             email: email,
-            comment: finalComment || undefined,
+            comment: comments || undefined,
             country: "fr",
             status: "confirmed",
         };
+
+        if (zenchefRoomId !== undefined) {
+            payload.wish = { booking_room_id: zenchefRoomId };
+        }
 
         try {
             const response = await firstValueFrom(
@@ -676,7 +644,6 @@ export class ZenchefService {
                 time,
                 comments,
                 email,
-                seatingPreference,
             };
         } catch (error: any) {
             const errorMessage = this.extractErrorMessage(error);
@@ -716,7 +683,7 @@ export class ZenchefService {
      * @param time - Reservation time (HH:MM format)
      * @param comments - Optional comments
      * @param email - Optional customer email
-     * @param seatingPreference - Optional seating area preference
+     * @param zenchefRoomId - Optional Zenchef room ID
      * @returns Updated booking object
      * @throws GeneralError if update fails
      */
@@ -731,7 +698,7 @@ export class ZenchefService {
         time: string,
         comments?: string,
         email?: string,
-        seatingPreference?: string
+        zenchefRoomId?: number
     ): Promise<Omit<BookingObjectModel, "description">> {
         try {
             // Get current booking to determine if only time changed
@@ -744,12 +711,6 @@ export class ZenchefService {
             const nameParts = name.trim().split(/\s+/);
             const firstname = nameParts[0];
             const lastname = nameParts.slice(1).join(" ") || nameParts[0];
-
-            let finalComment = comments || "";
-            if (seatingPreference) {
-                finalComment =
-                    `${finalComment}${finalComment ? " | " : ""}Seating preference: ${seatingPreference}`.trim();
-            }
 
             // Check if only time is changing
             const onlyTimeChanged =
@@ -770,6 +731,10 @@ export class ZenchefService {
                     time: time,
                 };
 
+                if (zenchefRoomId !== undefined) {
+                    changeTimePayload.wish = { booking_room_id: zenchefRoomId };
+                }
+
                 await firstValueFrom(
                     this.httpService.patch<ZenchefBookingResponse>(
                         `${this.baseUrlV1}/bookings/${bookingId}/changeTime`,
@@ -789,10 +754,14 @@ export class ZenchefService {
                     lastname,
                     phone_number: phone,
                     email: email,
-                    comment: finalComment || undefined,
+                    comment: comments || undefined,
                     country: "fr",
                     status: "confirmed",
                 };
+
+                if (zenchefRoomId !== undefined) {
+                    payload.wish = { booking_room_id: zenchefRoomId };
+                }
 
                 await firstValueFrom(
                     this.httpService.put<ZenchefBookingResponse>(
@@ -814,7 +783,6 @@ export class ZenchefService {
                 time,
                 comments,
                 email,
-                seatingPreference,
             };
         } catch (error: any) {
             const errorMessage = this.extractErrorMessage(error);
@@ -907,17 +875,23 @@ export class ZenchefService {
         oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
         const mappedBookings = bookings
-            .map((booking) => ({
-                bookingId: booking.id.toString(),
-                status: booking.status,
-                statusDescription: this.getStatusDescription(booking.status),
-                date: booking.day,
-                time: booking.time,
-                numberOfPeople: booking.nb_guests,
-                seatingArea: booking.shift_slot?.shift?.name ?? null,
-                customerName: `${booking.firstname} ${booking.lastname}`.trim(),
-                customerPhone: booking.phone_number,
-            }))
+            .map(
+                (booking) =>
+                    new ReservationItemModel({
+                        bookingId: booking.id.toString(),
+                        status: booking.status,
+                        statusDescription: this.getStatusDescription(
+                            booking.status
+                        ),
+                        date: booking.day,
+                        time: booking.time,
+                        numberOfPeople: booking.nb_guests,
+                        seatingArea: booking.shift_slot?.shift?.name ?? null,
+                        customerName:
+                            `${booking.firstname} ${booking.lastname}`.trim(),
+                        customerPhone: booking.phone_number,
+                    })
+            )
             .filter((booking) => {
                 const bookingDate = new Date(booking.date);
                 return bookingDate >= oneWeekAgo;
@@ -977,12 +951,15 @@ export class ZenchefService {
             for (const shift of response.data.data) {
                 for (const room of shift.rooms) {
                     if (!roomsMap.has(room.id)) {
-                        roomsMap.set(room.id, {
-                            id: room.id,
-                            name: room.name,
-                            description: room.description,
-                            max_capacity: room.capacity,
-                        });
+                        roomsMap.set(
+                            room.id,
+                            new SeatingAreaModel({
+                                id: room.id,
+                                name: room.name,
+                                description: room.description,
+                                max_capacity: room.capacity,
+                            })
+                        );
                     }
                 }
             }

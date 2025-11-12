@@ -59,4 +59,26 @@ export class ReservationItemModel {
         nullable: true,
     })
     customerPhone: string | null;
+
+    constructor(data: {
+        bookingId: string;
+        status: string;
+        statusDescription: string;
+        date: string;
+        time: string;
+        numberOfPeople: number;
+        seatingArea: string | null;
+        customerName: string;
+        customerPhone: string | null;
+    }) {
+        this.bookingId = data.bookingId;
+        this.status = data.status;
+        this.statusDescription = data.statusDescription;
+        this.date = data.date;
+        this.time = data.time;
+        this.numberOfPeople = data.numberOfPeople;
+        this.seatingArea = data.seatingArea;
+        this.customerName = data.customerName;
+        this.customerPhone = data.customerPhone;
+    }
 }
