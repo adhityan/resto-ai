@@ -22,13 +22,13 @@ export class CheckAvailabilityRequestModel {
     date: string;
 
     @ApiProperty({
-        description: "Time to check availability (HH:MM format)",
+        description: "Time to check availability (24-hour HH:MM format, e.g., 19:00 for 7 PM)",
         example: "19:00",
         required: false,
     })
     @IsOptional()
     @Matches(/^([01]\d|2[0-3]):([0-5]\d)$/, {
-        message: "Time must be in HH:MM format",
+        message: "Time must be in 24-hour HH:MM format (e.g., 19:00 for 7 PM)",
     })
     time?: string;
 

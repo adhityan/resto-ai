@@ -1,3 +1,4 @@
+import { ClsModule } from "nestjs-cls";
 import { Module } from "@nestjs/common";
 import { LoggerModule } from "nestjs-pino";
 import { ConfigModule } from "@nestjs/config";
@@ -30,6 +31,15 @@ import { ReservationsModule } from "../reservations/reservations.module";
         TerminusModule,
         ConfigModule.forRoot({
             isGlobal: true,
+        }),
+
+        ClsModule.forRoot({
+            middleware: {
+                mount: true,
+                generateId: true,
+                // idGenerator: (req: Request) =>
+                // req.headers['X-Request-Id'] ?? uuid();
+            },
         }),
         LoggerModule.forRoot({
             pinoHttp: {

@@ -119,12 +119,12 @@ export class AvailabilityResponseModel {
     })
     availableRoomTypesOnRequestedTime?: SeatingAreaInfoModel[];
 
-    @ApiProperty({
-        description:
-            "Available offers that match the number of guests (filtered by min/max pax and excludes private offers)",
-        type: [OfferModel],
-    })
-    offers: OfferModel[];
+    // @ApiProperty({
+    //     description:
+    //         "Available offers that match the number of guests (filtered by min/max pax and excludes private offers)",
+    //     type: [OfferModel],
+    // })
+    // offers: OfferModel[];
 
     @ApiProperty({
         description:
@@ -154,7 +154,7 @@ export class AvailabilityResponseModel {
         availableRoomTypesOnRequestedTime?: SeatingAreaInfoModel[];
         otherAvailableSlotsForThatDay: TimeSlotModel[];
         nextAvailableDate: NextAvailableDateModel | null;
-        offers: OfferModel[];
+        // offers: OfferModel[];
         description: string;
     }) {
         this.isRequestedSlotAvailable = data.isRequestedSlotAvailable;
@@ -163,6 +163,6 @@ export class AvailabilityResponseModel {
         this.otherAvailableSlotsForThatDay = data.otherAvailableSlotsForThatDay;
         this.nextAvailableDate = data.nextAvailableDate;
         this.description = data.description;
-        this.offers = data.offers;
+        // this.offers = data.offers;
     }
 }

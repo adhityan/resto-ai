@@ -1,0 +1,38 @@
+{
+    "type": "webhook",
+    "name": "get-reservation-by-id",
+    "description": "Retrieve complete details of a specific reservation using its booking ID. Use when you have a booking ID from a previous search or when customer provides their confirmation number. Returns full reservation details including status, comments, allergies, and whether it can be modified or cancelled.",
+    "disable_interruptions": false,
+    "force_pre_tool_speech": "auto",
+    "assignments": [],
+    "tool_call_sound": null,
+    "tool_call_sound_behavior": "auto",
+    "execution_mode": "immediate",
+    "api_schema": {
+        "url": "https://resto-ai.adhityan.com/api/reservations/{bookingId}",
+        "method": "GET",
+        "path_params_schema": [
+            {
+                "id": "bookingId",
+                "type": "string",
+                "value_type": "llm_prompt",
+                "description": "Unique booking identifier (confirmation number). This is obtained from search-reservations, get-reservations-with-phone results, or provided directly by customer as their confirmation number. Example format: '1526009' or 'bk_abc123xyz'.",
+                "dynamic_variable": "",
+                "constant_value": "",
+                "enum": null,
+                "is_system_provided": false,
+                "required": false
+            }
+        ],
+        "query_params_schema": [],
+        "request_body_schema": null,
+        "request_headers": [],
+        "auth_connection": {
+            "auth_connection_id": "auth_6601k887hn15f14ag2fqx7qck7d7"
+        }
+    },
+    "response_timeout_secs": 5,
+    "dynamic_variables": {
+        "dynamic_variable_placeholders": {}
+    }
+}

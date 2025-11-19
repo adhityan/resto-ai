@@ -1,0 +1,145 @@
+{
+    "type": "webhook",
+    "name": "update-reservation",
+    "description": "Modify an existing reservation. Supports partial updates—only include fields you want to change. Only call after: (1) retrieving the booking via search-reservations or get-reservations-with-phone to obtain bookingId, (2) checking availability if changing date/time/party size, (3) confirming the update details with customer.",
+    "disable_interruptions": false,
+    "force_pre_tool_speech": "force",
+    "assignments": [],
+    "tool_call_sound": null,
+    "tool_call_sound_behavior": "auto",
+    "execution_mode": "immediate",
+    "api_schema": {
+        "url": "https://resto-ai.adhityan.com/api/reservations/{bookingId}",
+        "method": "PUT",
+        "path_params_schema": [
+            {
+                "id": "bookingId",
+                "type": "string",
+                "value_type": "llm_prompt",
+                "description": "Unique booking identifier obtained from search-reservations or get-reservations-with-phone tool response. Required to identify which reservation to update. Example format: 'bk_abc123xyz'.",
+                "dynamic_variable": "",
+                "constant_value": "",
+                "enum": null,
+                "is_system_provided": false,
+                "required": false
+            }
+        ],
+        "query_params_schema": [],
+        "request_body_schema": {
+            "id": "body",
+            "type": "object",
+            "description": "Partial updates supported — only include fields you want to change. Unchanged fields can be omitted and will retain their current values. For date/time/party size changes, check availability first. Guide customers to times ending in :00, :15, :30, or :45.",
+            "properties": [
+                {
+                    "id": "date",
+                    "type": "string",
+                    "value_type": "llm_prompt",
+                    "description": "New reservation date in ISO format YYYY-MM-DD. Only include if customer wants to change the date. Check availability first for the new date. Omit if not changing.",
+                    "dynamic_variable": "",
+                    "constant_value": "",
+                    "enum": null,
+                    "is_system_provided": false,
+                    "required": false
+                },
+                {
+                    "id": "time",
+                    "type": "string",
+                    "value_type": "llm_prompt",
+                    "description": "New arrival time in 24-hour HH:MM format. Only include if customer wants to change the time. Prefer :00, :15, :30, or :45 intervals. Check availability and guide customer: 'How about 7pm or 7:30pm?' Omit if not changing. Examples: '19:00', '20:30'.",
+                    "dynamic_variable": "",
+                    "constant_value": "",
+                    "enum": null,
+                    "is_system_provided": false,
+                    "required": false
+                },
+                {
+                    "id": "phone",
+                    "type": "string",
+                    "value_type": "llm_prompt",
+                    "description": "New phone number. Only include if customer wants to update their contact number. Any format is acceptable—the system will normalize it automatically. Omit if not changing.",
+                    "dynamic_variable": "",
+                    "constant_value": "",
+                    "enum": null,
+                    "is_system_provided": false,
+                    "required": false
+                },
+                {
+                    "id": "comments",
+                    "type": "string",
+                    "value_type": "llm_prompt",
+                    "description": "New or additional special requests (occasions, accessibility needs). Only include if customer wants to add or change comments. Do NOT include dietary restrictions—use the allergies field. Omit if not changing. Examples: 'Window seat preferred', 'Anniversary dinner'.",
+                    "dynamic_variable": "",
+                    "constant_value": "",
+                    "enum": null,
+                    "is_system_provided": false,
+                    "required": false
+                },
+                {
+                    "id": "allergies",
+                    "type": "string",
+                    "value_type": "llm_prompt",
+                    "description": "New or updated dietary restrictions, food allergies, or special dietary requirements. Only include if customer mentions new dietary needs or wants to update existing ones. Omit if not changing. Examples: 'Gluten-free', 'No shellfish', 'Peanut allergy'.",
+                    "dynamic_variable": "",
+                    "constant_value": "",
+                    "enum": null,
+                    "is_system_provided": false,
+                    "required": false
+                },
+                {
+                    "id": "numberOfCustomers",
+                    "type": "integer",
+                    "value_type": "llm_prompt",
+                    "description": "New party size including the caller. Only include if customer wants to change the number of guests. Check availability first for the new party size. Infer from context: 'adding two more' = original + 2. Omit if not changing.",
+                    "dynamic_variable": "",
+                    "constant_value": "",
+                    "enum": null,
+                    "is_system_provided": false,
+                    "required": false
+                },
+                {
+                    "id": "email",
+                    "type": "string",
+                    "value_type": "llm_prompt",
+                    "description": "Customer's email address if available from original reservation or if customer provides it during update. Format: 'user@example.com'. Only include if present.",
+                    "dynamic_variable": "",
+                    "constant_value": "",
+                    "enum": null,
+                    "is_system_provided": false,
+                    "required": false
+                },
+                {
+                    "id": "roomId",
+                    "type": "string",
+                    "value_type": "llm_prompt",
+                    "description": "The UUID of the room if a special seating request was mentioned. Only include if explicitly confirmed with customer. Map the customer request to the UUID of the room that was asked.",
+                    "dynamic_variable": "",
+                    "constant_value": "",
+                    "enum": null,
+                    "is_system_provided": false,
+                    "required": false
+                },
+                {
+                    "id": "name",
+                    "type": "string",
+                    "value_type": "llm_prompt",
+                    "description": "New customer name. Only include if customer wants to change the name on the reservation. Format: 'Jean Dupont'. Ensure both first and last name. Omit if not changing.",
+                    "dynamic_variable": "",
+                    "constant_value": "",
+                    "enum": null,
+                    "is_system_provided": false,
+                    "required": false
+                }
+            ],
+            "required": false,
+            "value_type": "llm_prompt"
+        },
+        "request_headers": [],
+        "auth_connection": {
+            "auth_connection_id": "auth_6601k887hn15f14ag2fqx7qck7d7"
+        }
+    },
+    "response_timeout_secs": 5,
+    "dynamic_variables": {
+        "dynamic_variable_placeholders": {}
+    }
+}

@@ -26,7 +26,7 @@ export class CreateReservationRequestModel {
     numberOfCustomers: number;
 
     @ApiProperty({
-        description: "Customer phone number",
+        description: "Customer phone number (will be normalized automatically)",
         example: "+33612345678",
     })
     @IsNotEmpty()
@@ -51,12 +51,12 @@ export class CreateReservationRequestModel {
     date: string;
 
     @ApiProperty({
-        description: "Reservation time (HH:MM format)",
+        description: "Reservation time (24-hour HH:MM format, e.g., 19:00 for 7 PM)",
         example: "19:00",
     })
     @IsNotEmpty()
     @Matches(/^([01]\d|2[0-3]):([0-5]\d)$/, {
-        message: "Time must be in HH:MM format",
+        message: "Time must be in 24-hour HH:MM format (e.g., 19:00 for 7 PM)",
     })
     time: string;
 
@@ -72,11 +72,10 @@ export class CreateReservationRequestModel {
     @ApiProperty({
         description: "Customer email address",
         example: "john.smith@example.com",
-        required: false,
+        required: true,
     })
-    @IsOptional()
     @IsEmail()
-    email?: string;
+    email: string;
 
     @ApiProperty({
         description: "Seating area/room ID to assign the booking to",
@@ -86,4 +85,13 @@ export class CreateReservationRequestModel {
     @IsOptional()
     @IsString()
     roomId?: string;
+
+    @ApiProperty({
+        description: "Allergies or dietary restrictions",
+        example: "Gluten-free, no shellfish",
+        required: false,
+    })
+    @IsOptional()
+    @IsString()
+    allergies?: string;
 }

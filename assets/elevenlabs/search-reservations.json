@@ -1,0 +1,78 @@
+{
+    "type": "webhook",
+    "name": "search-reservations",
+    "description": "Search for reservations using any combination of phone, email, name, and/or date. All parameters are optional - you can call this tool with any subset of parameters or even without any parameters to get recently made reservations. Uses fuzzy matching on names. Empty result means no matching reservations found.",
+    "disable_interruptions": false,
+    "force_pre_tool_speech": "force",
+    "assignments": [],
+    "tool_call_sound": null,
+    "tool_call_sound_behavior": "auto",
+    "execution_mode": "immediate",
+    "api_schema": {
+        "url": "https://resto-ai.adhityan.com/api/reservations/search",
+        "method": "POST",
+        "path_params_schema": [],
+        "query_params_schema": [],
+        "request_body_schema": {
+            "id": "body",
+            "type": "object",
+            "description": "All parameters are optional. Use any combination or call without parameters. The tool uses fuzzy search for names to match similar spellings. More filters provide more specific results.",
+            "properties": [
+                {
+                    "id": "phone",
+                    "type": "string",
+                    "value_type": "llm_prompt",
+                    "description": "Customer's phone number in any format - the system will normalize it automatically. Use when the phone number is known or available from context. Examples: '+33612345678', '0612345678', '06 12 34 56 78'.",
+                    "dynamic_variable": "",
+                    "constant_value": "",
+                    "enum": null,
+                    "is_system_provided": false,
+                    "required": false
+                },
+                {
+                    "id": "email",
+                    "type": "string",
+                    "value_type": "llm_prompt",
+                    "description": "Customer's email address. Use when the customer provides or mentions their email. Example: 'john.smith@example.com'.",
+                    "dynamic_variable": "",
+                    "constant_value": "",
+                    "enum": null,
+                    "is_system_provided": false,
+                    "required": false
+                },
+                {
+                    "id": "customerName",
+                    "type": "string",
+                    "value_type": "llm_prompt",
+                    "description": "Customer's full name as provided. Fuzzy matching will find similar spellings. Get correct spelling by asking them to spell it if unclear (e.g., 'Is that Smith or Smyth?'). Include first and last name when available. Examples: 'Jean Dupont', 'Maria Garcia', 'John Smith'.",
+                    "dynamic_variable": "",
+                    "constant_value": "",
+                    "enum": null,
+                    "is_system_provided": false,
+                    "required": false
+                },
+                {
+                    "id": "date",
+                    "type": "string",
+                    "value_type": "llm_prompt",
+                    "description": "Reservation date in ISO format YYYY-MM-DD. Use when customer mentions a specific date (e.g., 'my booking for Saturday', 'reservation today', 'next Friday'). Convert natural language dates to ISO format. Omit if searching across all dates.",
+                    "dynamic_variable": "",
+                    "constant_value": "",
+                    "enum": null,
+                    "is_system_provided": false,
+                    "required": false
+                }
+            ],
+            "required": false,
+            "value_type": "llm_prompt"
+        },
+        "request_headers": [],
+        "auth_connection": {
+            "auth_connection_id": "auth_6601k887hn15f14ag2fqx7qck7d7"
+        }
+    },
+    "response_timeout_secs": 5,
+    "dynamic_variables": {
+        "dynamic_variable_placeholders": {}
+    }
+}

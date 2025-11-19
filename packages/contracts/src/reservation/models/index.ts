@@ -1,6 +1,5 @@
 export * from "./check-availability-request.model";
 export * from "./availability-response.model";
-export * from "./get-reservation-by-phone-request.model";
 export * from "./search-reservations-request.model";
 export * from "./reservation-item.model";
 export * from "./reservation-list-response.model";

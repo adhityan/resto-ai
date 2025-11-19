@@ -141,6 +141,7 @@ export interface ZenchefBookingData {
     email: string | null;
     comment: string | null;
     private_comment: string | null;
+    allergies: string | null;
     status: string; // "confirmed", "waiting", "canceled", "seated", "over", "no_shown"
     shift_slot: ZenchefBookingShiftSlot | null;
     customersheet?: ZenchefCustomerSheet;
@@ -186,6 +187,7 @@ export interface ZenchefCreateBookingPayload {
     phone_number?: string;
     email?: string;
     comment?: string;
+    allergies?: string;
     country: string; // ISO code (e.g., "fr", "us")
     status: string; // "confirmed" or "waiting"
     wish?: {

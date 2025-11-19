@@ -5,7 +5,7 @@ import { ApiProperty } from "@nestjs/swagger";
  */
 export class BookingObjectModel {
     @ApiProperty({
-        description: "Unique booking identifier from Zenchef",
+        description: "Unique booking identifier (also serves as the confirmation code)",
         example: "1526009",
     })
     bookingId: string;
@@ -55,6 +55,39 @@ export class BookingObjectModel {
     email?: string;
 
     @ApiProperty({
+        description: "Allergies or dietary restrictions",
+        example: "Gluten-free, no shellfish",
+        required: false,
+    })
+    allergies?: string;
+
+    @ApiProperty({
+        description: "Internal seating area ID (UUID)",
+        example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        required: false,
+    })
+    seatingAreaId?: string;
+
+    @ApiProperty({
+        description: "Seating area room name",
+        example: "Main Dining Room",
+        required: false,
+    })
+    seatingAreaName?: string;
+
+    @ApiProperty({
+        description: "Whether the reservation can be modified",
+        example: true,
+    })
+    canModify: boolean;
+
+    @ApiProperty({
+        description: "Whether the reservation can be cancelled",
+        example: true,
+    })
+    canCancel: boolean;
+
+    @ApiProperty({
         description:
             "Human-readable description of the booking operation result for LLM consumption",
         example:
@@ -71,7 +104,11 @@ export class BookingObjectModel {
         time: string;
         comments?: string;
         email?: string;
+        allergies?: string;
+        seatingAreaId?: string;
+        seatingAreaName?: string;
         description: string;
+        status?: string;
     }) {
         this.bookingId = data.bookingId;
         this.numberOfCustomers = data.numberOfCustomers;
@@ -81,6 +118,24 @@ export class BookingObjectModel {
         this.time = data.time;
         this.comments = data.comments;
         this.email = data.email;
+        this.allergies = data.allergies;
+        this.seatingAreaId = data.seatingAreaId;
+        this.seatingAreaName = data.seatingAreaName;
         this.description = data.description;
+        
+        // Calculate canModify and canCancel based on status and date
+        const unchangeableStatuses = ['canceled', 'refused', 'over', 'no_shown'];
+        const isUnchangeableStatus = data.status ? unchangeableStatuses.includes(data.status) : false;
+        
+        // Check if date is in the past (compare with today at midnight)
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const reservationDate = new Date(data.date);
+        reservationDate.setHours(0, 0, 0, 0);
+        const isPastDate = reservationDate < today;
+        
+        // For new bookings (no status), assume they can be modified/cancelled if not past
+        this.canModify = !isUnchangeableStatus && !isPastDate;
+        this.canCancel = !isUnchangeableStatus && !isPastDate;
     }
 }

@@ -60,6 +60,53 @@ export class ReservationItemModel {
     })
     customerPhone: string | null;
 
+    @ApiProperty({
+        description: "Comments or special requests",
+        example: "Window seat preferred",
+        required: false,
+    })
+    comments?: string;
+
+    @ApiProperty({
+        description: "Customer email address",
+        example: "john.doe@example.com",
+        required: false,
+    })
+    email?: string;
+
+    @ApiProperty({
+        description: "Allergies or dietary restrictions",
+        example: "Gluten-free",
+        required: false,
+    })
+    allergies?: string;
+
+    @ApiProperty({
+        description: "Internal seating area ID (UUID)",
+        example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        required: false,
+    })
+    seatingAreaId?: string;
+
+    @ApiProperty({
+        description: "Seating area room name",
+        example: "Main Dining Room",
+        required: false,
+    })
+    seatingAreaName?: string;
+
+    @ApiProperty({
+        description: "Whether the reservation can be modified",
+        example: true,
+    })
+    canModify: boolean;
+
+    @ApiProperty({
+        description: "Whether the reservation can be cancelled",
+        example: true,
+    })
+    canCancel: boolean;
+
     constructor(data: {
         bookingId: string;
         status: string;
@@ -70,6 +117,11 @@ export class ReservationItemModel {
         seatingArea: string | null;
         customerName: string;
         customerPhone: string | null;
+        comments?: string;
+        email?: string;
+        allergies?: string;
+        seatingAreaId?: string;
+        seatingAreaName?: string;
     }) {
         this.bookingId = data.bookingId;
         this.status = data.status;
@@ -80,5 +132,24 @@ export class ReservationItemModel {
         this.seatingArea = data.seatingArea;
         this.customerName = data.customerName;
         this.customerPhone = data.customerPhone;
+        this.comments = data.comments;
+        this.email = data.email;
+        this.allergies = data.allergies;
+        this.seatingAreaId = data.seatingAreaId;
+        this.seatingAreaName = data.seatingAreaName;
+        
+        // Calculate canModify and canCancel based on status and date
+        const unchangeableStatuses = ['canceled', 'refused', 'over', 'no_shown'];
+        const isUnchangeableStatus = unchangeableStatuses.includes(data.status);
+        
+        // Check if date is in the past (compare with today at midnight)
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const reservationDate = new Date(data.date);
+        reservationDate.setHours(0, 0, 0, 0);
+        const isPastDate = reservationDate < today;
+        
+        this.canModify = !isUnchangeableStatus && !isPastDate;
+        this.canCancel = !isUnchangeableStatus && !isPastDate;
     }
 }

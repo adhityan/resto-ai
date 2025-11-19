@@ -13,52 +13,58 @@ import {
 
 /**
  * Request model for updating an existing reservation
+ * All fields are optional. Only provided fields will be updated.
  */
 export class UpdateReservationRequestModel {
     @ApiProperty({
         description: "Number of customers for the reservation",
         example: 4,
         minimum: 1,
+        required: false,
     })
-    @IsNotEmpty()
+    @IsOptional()
     @IsInt()
     @Min(1, { message: "Number of customers must be at least 1" })
-    numberOfCustomers: number;
+    numberOfCustomers?: number;
 
     @ApiProperty({
-        description: "Customer phone number",
+        description: "Customer phone number (will be normalized automatically)",
         example: "+33612345678",
+        required: false,
     })
-    @IsNotEmpty()
+    @IsOptional()
     @IsString()
-    phone: string;
+    phone?: string;
 
     @ApiProperty({
         description: "Customer full name",
         example: "John Smith",
+        required: false,
     })
-    @IsNotEmpty()
+    @IsOptional()
     @IsString()
     @MaxLength(100, { message: "Name must be less than 100 characters" })
-    name: string;
+    name?: string;
 
     @ApiProperty({
         description: "Reservation date (ISO format YYYY-MM-DD)",
         example: "2025-10-25",
+        required: false,
     })
-    @IsNotEmpty()
+    @IsOptional()
     @IsDateString()
-    date: string;
+    date?: string;
 
     @ApiProperty({
-        description: "Reservation time (HH:MM format)",
+        description: "Reservation time (24-hour HH:MM format, e.g., 19:00 for 7 PM)",
         example: "19:00",
+        required: false,
     })
-    @IsNotEmpty()
+    @IsOptional()
     @Matches(/^([01]\d|2[0-3]):([0-5]\d)$/, {
-        message: "Time must be in HH:MM format",
+        message: "Time must be in 24-hour HH:MM format (e.g., 19:00 for 7 PM)",
     })
-    time: string;
+    time?: string;
 
     @ApiProperty({
         description: "Optional comments or special requests",
@@ -86,4 +92,13 @@ export class UpdateReservationRequestModel {
     @IsOptional()
     @IsString()
     roomId?: string;
+
+    @ApiProperty({
+        description: "Allergies or dietary restrictions",
+        example: "Gluten-free, no shellfish",
+        required: false,
+    })
+    @IsOptional()
+    @IsString()
+    allergies?: string;
 }

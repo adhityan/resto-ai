@@ -301,7 +301,7 @@ export class ZenchefService {
                     );
                     return {
                         isRequestedSlotAvailable,
-                        offers,
+                        // offers,
                         availableRoomTypesOnRequestedTime,
                         otherAvailableSlotsForThatDay: [],
                         nextAvailableDate: null,
@@ -321,7 +321,7 @@ export class ZenchefService {
 
             return {
                 isRequestedSlotAvailable,
-                offers,
+                // offers,
                 availableRoomTypesOnRequestedTime,
                 otherAvailableSlotsForThatDay,
                 nextAvailableDate: null,
@@ -410,14 +410,14 @@ export class ZenchefService {
                             );
 
                             // Extract offers for this date
-                            const offers = this.extractOffers(
-                                [shift],
-                                numberOfPeople
-                            );
+                            // const offers = this.extractOffers(
+                            //     [shift],
+                            //     numberOfPeople
+                            // );
 
                             return {
                                 isRequestedSlotAvailable,
-                                offers,
+                                // offers,
                                 otherAvailableSlotsForThatDay: [],
                                 nextAvailableDate:
                                     seatingAreas.length > 0
@@ -441,72 +441,18 @@ export class ZenchefService {
         // No availability found in next 30 days
         return {
             isRequestedSlotAvailable,
-            offers: [],
+            // offers: [],
             otherAvailableSlotsForThatDay: [],
             nextAvailableDate: null,
         };
     }
 
     /**
-     * Retrieves reservations by customer phone number
+     * Searches for reservations using optional filters: phone, email, date, and/or customer name
      * @param zenchefId - Restaurant Zenchef ID
      * @param apiToken - Restaurant API token
-     * @param phone - Customer phone number
-     * @param date - Optional date filter (ISO format YYYY-MM-DD)
-     * @returns Array of reservation items
-     */
-    public async getReservationByPhone(
-        zenchefId: string,
-        apiToken: string,
-        phone: string,
-        date?: string
-    ): Promise<ReservationItemModel[]> {
-        try {
-            const params = new URLSearchParams();
-            params.append("filters[0][field]", "reservation_type");
-            params.append("filters[0][operator]", "=");
-            params.append("filters[0][value]", "reservation");
-            params.append("filters[1][field]", "phone_number");
-            params.append("filters[1][operator]", "=");
-            params.append("filters[1][value]", phone);
-
-            if (date) {
-                params.append("filters[2][field]", "day");
-                params.append("filters[2][operator]", "=");
-                params.append("filters[2][value]", date);
-            }
-
-            params.append("limit", "100");
-            params.append("page", "1");
-
-            const response = await firstValueFrom(
-                this.httpService.get<ZenchefBookingSearchResponse>(
-                    `${this.baseUrlV1}/bookings?${params.toString()}`,
-                    {
-                        headers: this.buildHeaders(apiToken, zenchefId),
-                    }
-                )
-            );
-
-            return this.mapToReservationItems(response.data.data);
-        } catch (error: any) {
-            if (error.response?.status === 404) {
-                return [];
-            }
-            this.logger.error(
-                `Error getting reservations by phone: ${error.message}`,
-                error.stack
-            );
-            throw new GeneralError(
-                `Failed to retrieve reservations: ${error.message}`
-            );
-        }
-    }
-
-    /**
-     * Searches for reservations by optional date and customer name
-     * @param zenchefId - Restaurant Zenchef ID
-     * @param apiToken - Restaurant API token
+     * @param phone - Optional customer phone number filter
+     * @param email - Optional customer email filter
      * @param date - Optional date filter (ISO format YYYY-MM-DD)
      * @param customerName - Optional customer name for fuzzy search
      * @returns Array of matching reservation items
@@ -514,6 +460,8 @@ export class ZenchefService {
     public async searchReservations(
         zenchefId: string,
         apiToken: string,
+        phone?: string,
+        email?: string,
         date?: string,
         customerName?: string
     ): Promise<ReservationItemModel[]> {
@@ -523,10 +471,28 @@ export class ZenchefService {
             params.append("filters[0][operator]", "=");
             params.append("filters[0][value]", "reservation");
 
+            // Build filters dynamically based on provided parameters
+            let filterIndex = 1;
+
+            if (phone) {
+                params.append(`filters[${filterIndex}][field]`, "phone_number");
+                params.append(`filters[${filterIndex}][operator]`, "=");
+                params.append(`filters[${filterIndex}][value]`, phone);
+                filterIndex++;
+            }
+
+            if (email) {
+                params.append(`filters[${filterIndex}][field]`, "email");
+                params.append(`filters[${filterIndex}][operator]`, "=");
+                params.append(`filters[${filterIndex}][value]`, email);
+                filterIndex++;
+            }
+
             if (date) {
-                params.append("filters[1][field]", "day");
-                params.append("filters[1][operator]", "=");
-                params.append("filters[1][value]", date);
+                params.append(`filters[${filterIndex}][field]`, "day");
+                params.append(`filters[${filterIndex}][operator]`, "=");
+                params.append(`filters[${filterIndex}][value]`, date);
+                filterIndex++;
             }
 
             params.append("limit", "100");
@@ -587,6 +553,7 @@ export class ZenchefService {
      * @param comments - Optional comments
      * @param email - Optional customer email
      * @param zenchefRoomId - Optional Zenchef room ID
+     * @param allergies - Optional allergies or dietary restrictions
      * @returns Complete booking object with booking ID
      * @throws GeneralError if booking cannot be created
      */
@@ -600,7 +567,8 @@ export class ZenchefService {
         time: string,
         comments?: string,
         email?: string,
-        zenchefRoomId?: number
+        zenchefRoomId?: number,
+        allergies?: string
     ): Promise<Omit<BookingObjectModel, "description">> {
         // Parse name into first and last name
         const nameParts = name.trim().split(/\s+/);
@@ -616,6 +584,7 @@ export class ZenchefService {
             phone_number: phone,
             email: email,
             comment: comments || undefined,
+            allergies: allergies || undefined,
             country: "fr",
             status: "confirmed",
         };
@@ -644,6 +613,9 @@ export class ZenchefService {
                 time,
                 comments,
                 email,
+                allergies,
+                canModify: true, // New bookings can be modified
+                canCancel: true,
             };
         } catch (error: any) {
             const errorMessage = this.extractErrorMessage(error);
@@ -684,6 +656,7 @@ export class ZenchefService {
      * @param comments - Optional comments
      * @param email - Optional customer email
      * @param zenchefRoomId - Optional Zenchef room ID
+     * @param allergies - Optional allergies or dietary restrictions
      * @returns Updated booking object
      * @throws GeneralError if update fails
      */
@@ -698,7 +671,8 @@ export class ZenchefService {
         time: string,
         comments?: string,
         email?: string,
-        zenchefRoomId?: number
+        zenchefRoomId?: number,
+        allergies?: string
     ): Promise<Omit<BookingObjectModel, "description">> {
         try {
             // Get current booking to determine if only time changed
@@ -755,6 +729,7 @@ export class ZenchefService {
                     phone_number: phone,
                     email: email,
                     comment: comments || undefined,
+                    allergies: allergies || undefined,
                     country: "fr",
                     status: "confirmed",
                 };
@@ -783,6 +758,9 @@ export class ZenchefService {
                 time,
                 comments,
                 email,
+                allergies,
+                canModify: true, // Updated bookings can be modified
+                canCancel: true,
             };
         } catch (error: any) {
             const errorMessage = this.extractErrorMessage(error);
@@ -846,9 +824,13 @@ export class ZenchefService {
     }
 
     /**
-     * Helper method to get booking details by ID
+     * Gets booking details by ID
+     * @param zenchefId - Restaurant Zenchef ID
+     * @param apiToken - Restaurant API token
+     * @param bookingId - Zenchef booking ID
+     * @returns Complete booking data from Zenchef
      */
-    private async getBookingById(
+    public async getBookingById(
         zenchefId: string,
         apiToken: string,
         bookingId: string
@@ -890,6 +872,11 @@ export class ZenchefService {
                         customerName:
                             `${booking.firstname} ${booking.lastname}`.trim(),
                         customerPhone: booking.phone_number,
+                        comments: booking.comment || undefined,
+                        email: booking.email || undefined,
+                        allergies: booking.allergies || undefined,
+                        // Note: seatingAreaId and seatingAreaName would require additional lookups
+                        // These can be populated if needed by passing restaurant seating areas
                     })
             )
             .filter((booking) => {

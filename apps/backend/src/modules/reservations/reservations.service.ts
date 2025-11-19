@@ -5,6 +5,7 @@ import {
     CancelReservationResponseModel,
     ReservationListResponseModel,
 } from "@repo/contracts";
+import { CacheUtil, normalizePhoneNumber } from "@repo/utils";
 import { ZenchefService } from "../zenchef/zenchef.service";
 import { RestaurantService } from "../restaurant/restaurant.service";
 import { GeneralError, RestaurantNotFoundError } from "../../errors";
@@ -16,11 +17,15 @@ import { GeneralError, RestaurantNotFoundError } from "../../errors";
 @Injectable()
 export class ReservationsService {
     private readonly logger = new Logger(ReservationsService.name);
+    private readonly bookingIdCache: CacheUtil<Set<string>>;
 
     constructor(
         private readonly zenchefService: ZenchefService,
         private readonly restaurantService: RestaurantService
-    ) {}
+    ) {
+        // Initialize cache with 24 hour TTL
+        this.bookingIdCache = new CacheUtil<Set<string>>(86400);
+    }
 
     /**
      * Helper method to get restaurant credentials and settings
@@ -88,7 +93,7 @@ export class ReservationsService {
 
             return new AvailabilityResponseModel({
                 isRequestedSlotAvailable: false,
-                offers: [],
+                // offers: [],
                 otherAvailableSlotsForThatDay: [],
                 nextAvailableDate: null,
                 description,
@@ -100,16 +105,13 @@ export class ReservationsService {
             await this.restaurantService.getSeatingAreasByRestaurantId(
                 restaurantId
             );
-        const seatingAreas = allSeatingAreas.filter(
-            (area) => area.maxCapacity < maxEscalationSeating
-        );
 
         const availability = await this.zenchefService.checkAvailability(
             zenchefId,
             apiToken,
             date,
             numberOfPeople,
-            seatingAreas,
+            allSeatingAreas,
             time
         );
 
@@ -231,100 +233,134 @@ export class ReservationsService {
     }
 
     /**
-     * Retrieves reservations by customer phone number
+     * Searches for reservations using optional filters: phone, email, date, and/or customer name
+     * If no parameters provided, returns recent reservations from cache
      * @param restaurantId - Internal restaurant ID
-     * @param phone - Customer phone number
-     * @param date - Optional date filter (ISO format YYYY-MM-DD)
-     * @returns Array of reservation items with human-readable description
-     */
-    async getReservationByPhone(
-        restaurantId: string,
-        phone: string,
-        date?: string
-    ): Promise<ReservationListResponseModel> {
-        this.logger.log(
-            `For restaurant "${restaurantId}", getting reservations by phone "${phone}" ${date ? ` for date "${date}"` : ""}`
-        );
-
-        const { zenchefId, apiToken } =
-            await this.getRestaurantCredentials(restaurantId);
-
-        const reservations = await this.zenchefService.getReservationByPhone(
-            zenchefId,
-            apiToken,
-            phone,
-            date
-        );
-
-        console.log("getReservationByPhone", reservations);
-        // Generate human-readable description
-        let description = `Searched for reservations with phone number ${phone}`;
-        if (date) {
-            description += ` on ${date}`;
-        }
-        description += " (reservations older than 1 week are not shown). ";
-
-        if (reservations.length === 0) {
-            description += `No reservations found.`;
-        } else if (reservations.length === 1) {
-            const res = reservations[0];
-            description += `Found 1 reservation: Booking ID ${res.bookingId}, ${res.numberOfPeople} people on ${res.date}, status: ${res.statusDescription}`;
-            if (res.seatingArea) {
-                description += `, seating area: ${res.seatingArea}`;
-            }
-            description += ".";
-        } else {
-            description += `Found ${reservations.length} reservations. `;
-            const summaries = reservations.map((res) => {
-                let summary = `${res.date} (${res.numberOfPeople} people, ${res.statusDescription})`;
-                return summary;
-            });
-            description += `Details: ${summaries.join("; ")}.`;
-        }
-
-        return new ReservationListResponseModel({
-            reservations,
-            description,
-        });
-    }
-
-    /**
-     * Searches for reservations by optional date and customer name
-     * @param restaurantId - Internal restaurant ID
+     * @param phone - Optional customer phone number
+     * @param email - Optional customer email address
      * @param date - Optional date filter (ISO format YYYY-MM-DD)
      * @param customerName - Optional customer name for fuzzy search
      * @returns Array of matching reservation items with human-readable description
      */
     async searchReservations(
         restaurantId: string,
+        phone?: string,
+        email?: string,
         date?: string,
         customerName?: string
     ): Promise<ReservationListResponseModel> {
-        this.logger.log(
-            `For restaurant "${restaurantId}", searching reservations${date ? ` for date "${date}"` : ""}${customerName ? ` with name "${customerName}"` : ""}`
-        );
-
         const { zenchefId, apiToken } =
             await this.getRestaurantCredentials(restaurantId);
+
+        // If no parameters provided, fetch from cache
+        if (!phone && !email && !date && !customerName) {
+            this.logger.log(
+                `For restaurant "${restaurantId}", fetching recent reservations from cache`
+            );
+
+            const cachedBookingIds =
+                this.bookingIdCache.get(restaurantId) || new Set<string>();
+
+            if (cachedBookingIds.size === 0) {
+                return new ReservationListResponseModel({
+                    reservations: [],
+                    description:
+                        "No recent reservations available. Please search with specific criteria (phone, email, date, or name) to find reservations.",
+                });
+            }
+
+            // Fetch full details for cached booking IDs
+            const reservations = await Promise.all(
+                Array.from(cachedBookingIds).map(async (bookingId) => {
+                    try {
+                        const booking =
+                            await this.zenchefService.getBookingById(
+                                zenchefId,
+                                apiToken,
+                                bookingId
+                            );
+
+                        return {
+                            bookingId: booking.id.toString(),
+                            numberOfPeople: booking.nb_guests,
+                            date: booking.day,
+                            time: booking.time,
+                            name: `${booking.firstname} ${booking.lastname}`.trim(),
+                            phone: booking.phone_number || "",
+                            email: booking.email || undefined,
+                            status: booking.status,
+                            statusDescription: this.getStatusDescription(
+                                booking.status
+                            ),
+                            seatingArea:
+                                booking.shift_slot?.shift?.name || undefined,
+                        };
+                    } catch (error) {
+                        this.logger.warn(
+                            `Failed to fetch booking ${bookingId}: ${error}`
+                        );
+                        return null;
+                    }
+                })
+            );
+
+            const validReservations = reservations.filter(
+                (r) => r !== null
+            ) as any[];
+
+            let description = `Retrieved ${validReservations.length} recent reservation(s) from cache. `;
+            if (validReservations.length > 0) {
+                description += `Use specific filters (phone, email, date, or name) to narrow results.`;
+            }
+
+            return new ReservationListResponseModel({
+                reservations: validReservations,
+                description,
+            });
+        }
+
+        // Normalize phone number if provided
+        const normalizedPhone = phone ? normalizePhoneNumber(phone) : undefined;
+
+        const filters: string[] = [];
+        if (phone) {
+            filters.push(`phone: ${phone}`);
+        }
+        if (email) {
+            filters.push(`email: ${email}`);
+        }
+        if (date) {
+            filters.push(`date: ${date}`);
+        }
+        if (customerName) {
+            filters.push(`name: "${customerName}"`);
+        }
+
+        this.logger.log(
+            `For restaurant "${restaurantId}", searching reservations with filters: ${filters.join(", ")}`
+        );
 
         const reservations = await this.zenchefService.searchReservations(
             zenchefId,
             apiToken,
+            normalizedPhone,
+            email,
             date,
             customerName
         );
 
         console.log("searchReservations", reservations);
-        // Generate human-readable description
-        let description = "Searched for reservations";
-        const filters: string[] = [];
-        if (date) {
-            filters.push(`date: ${date}`);
-        }
-        if (customerName) {
-            filters.push(`customer name: "${customerName}"`);
+
+        // Cache booking IDs
+        if (reservations.length > 0) {
+            const existingCache =
+                this.bookingIdCache.get(restaurantId) || new Set<string>();
+            reservations.forEach((res) => existingCache.add(res.bookingId));
+            this.bookingIdCache.set(restaurantId, existingCache);
         }
 
+        // Generate human-readable description
+        let description = "Searched for reservations";
         if (filters.length > 0) {
             description += ` with filters (${filters.join(", ")})`;
         }
@@ -365,6 +401,7 @@ export class ReservationsService {
      * @param comments - Optional comments
      * @param email - Optional customer email
      * @param roomId - Optional seating area ID
+     * @param allergies - Optional allergies or dietary restrictions
      * @returns Complete booking object with booking ID and human-readable description
      */
     async createReservation(
@@ -376,25 +413,15 @@ export class ReservationsService {
         time: string,
         comments?: string,
         email?: string,
-        roomId?: string
+        roomId?: string,
+        allergies?: string
     ): Promise<BookingObjectModel> {
-        this.logger.log(
-            `For restaurant "${restaurantId}", creating reservation for "${numberOfCustomers}" people on "${date}" at "${time}" with name "${name}" and phone "${phone}". Optional comments: "${comments}". Optional email: "${email}". Optional roomId: "${roomId}".`
-        );
+        // Normalize phone number
+        const normalizedPhone = normalizePhoneNumber(phone);
 
-        // TEMPORARY TEST RESPONSE - REMOVE AFTER TESTING
-        // return {
-        //     bookingId: "TEST_BOOKING_123",
-        //     numberOfCustomers,
-        //     phone,
-        //     name,
-        //     date,
-        //     time,
-        //     comments,
-        //     email,
-        //     seatingPreference,
-        //     description: `Successfully created a new reservation. Booking ID: 512345. Customer: ${name} (phone: ${phone}${email ? `, email: ${email}` : ""}). Reservation: ${numberOfCustomers} people on ${date} at ${time}${seatingPreference ? ` in ${seatingPreference} seating area` : ""}.${comments ? ` Special requests: ${comments}.` : ""}`,
-        // };
+        this.logger.log(
+            `For restaurant "${restaurantId}", creating reservation for "${numberOfCustomers}" people on "${date}" at "${time}" with name "${name}" and phone "${normalizedPhone}" (original: "${phone}"). Optional comments: "${comments}". Optional email: "${email}". Optional roomId: "${roomId}". Optional allergies: "${allergies}".`
+        );
 
         const { zenchefId, apiToken } =
             await this.getRestaurantCredentials(restaurantId);
@@ -415,13 +442,14 @@ export class ReservationsService {
             zenchefId,
             apiToken,
             numberOfCustomers,
-            phone,
+            normalizedPhone,
             name,
             date,
             time,
             comments,
             email,
-            zenchefRoomId
+            zenchefRoomId,
+            allergies
         );
 
         console.log("createReservation", booking);
@@ -438,6 +466,9 @@ export class ReservationsService {
         if (booking.comments) {
             description += ` Special requests: ${booking.comments}.`;
         }
+        if (allergies) {
+            description += ` Allergies: ${allergies}.`;
+        }
 
         return new BookingObjectModel({
             ...booking,
@@ -446,59 +477,74 @@ export class ReservationsService {
     }
 
     /**
-     * Updates an existing reservation
+     * Updates an existing reservation (supports partial updates)
      * @param restaurantId - Internal restaurant ID
      * @param bookingId - Zenchef booking ID
-     * @param numberOfCustomers - Number of guests
-     * @param phone - Customer phone number
-     * @param name - Customer full name
-     * @param date - Reservation date (ISO format YYYY-MM-DD)
-     * @param time - Reservation time (HH:MM format)
-     * @param comments - Optional comments
-     * @param email - Optional customer email
-     * @param roomId - Optional seating area ID
+     * @param updates - Partial update data (only provided fields will be updated)
      * @returns Updated booking object with human-readable description
      */
     async updateReservation(
         restaurantId: string,
         bookingId: string,
-        numberOfCustomers: number,
-        phone: string,
-        name: string,
-        date: string,
-        time: string,
-        comments?: string,
-        email?: string,
-        roomId?: string
+        updates: {
+            numberOfCustomers?: number;
+            phone?: string;
+            name?: string;
+            date?: string;
+            time?: string;
+            comments?: string;
+            email?: string;
+            roomId?: string;
+            allergies?: string;
+        }
     ): Promise<BookingObjectModel> {
         this.logger.log(
-            `For restaurant "${restaurantId}", updating reservation "${bookingId}". Number of customers: "${numberOfCustomers}". Phone: "${phone}". Name: "${name}". Date: "${date}". Time: "${time}". Optional comments: "${comments}". Optional email: "${email}". Optional roomId: "${roomId}".`
+            `For restaurant "${restaurantId}", updating reservation "${bookingId}". Updates: ${JSON.stringify(updates)}`
         );
-
-        // // TEMPORARY TEST RESPONSE - REMOVE AFTER TESTING
-        // return {
-        //     bookingId,
-        //     numberOfCustomers,
-        //     phone,
-        //     name,
-        //     date,
-        //     time,
-        //     comments,
-        //     email,
-        //     seatingPreference,
-        //     description: `Successfully updated the reservation. Booking ID: ${bookingId}. Updated customer information: ${name} (phone: ${phone}${email ? `, email: ${email}` : ""}). Updated reservation details: ${numberOfCustomers} people on ${date} at ${time}${seatingPreference ? ` in ${seatingPreference} seating area` : ""}.${comments ? ` Special requests: ${comments}.` : ""}`,
-        // };
 
         const { zenchefId, apiToken } =
             await this.getRestaurantCredentials(restaurantId);
 
+        // Fetch existing booking to merge with updates
+        const existingBooking = await this.zenchefService.getBookingById(
+            zenchefId,
+            apiToken,
+            bookingId
+        );
+
+        // Merge existing data with updates
+        const existingFullName =
+            `${existingBooking.firstname} ${existingBooking.lastname}`.trim();
+        const numberOfCustomers =
+            updates.numberOfCustomers ?? existingBooking.nb_guests;
+        // Normalize phone if provided in updates
+        const phone = updates.phone
+            ? normalizePhoneNumber(updates.phone)
+            : existingBooking.phone_number || "";
+        const name = updates.name ?? existingFullName;
+        const date = updates.date ?? existingBooking.day;
+        const time = updates.time ?? existingBooking.time;
+        const comments =
+            updates.comments !== undefined
+                ? updates.comments
+                : existingBooking.comment;
+        const email =
+            updates.email !== undefined ? updates.email : existingBooking.email;
+        const allergies =
+            updates.allergies !== undefined
+                ? updates.allergies
+                : existingBooking.allergies;
+
+        // Handle room ID
         let zenchefRoomId: number | undefined;
-        if (roomId) {
+        if (updates.roomId !== undefined) {
             const seatingAreas =
                 await this.restaurantService.getSeatingAreasByRestaurantId(
                     restaurantId
                 );
-            const seatingArea = seatingAreas.find((area) => area.id === roomId);
+            const seatingArea = seatingAreas.find(
+                (area) => area.id === updates.roomId
+            );
             if (seatingArea) {
                 zenchefRoomId = seatingArea.zenchefRoomId;
             }
@@ -513,9 +559,10 @@ export class ReservationsService {
             name,
             date,
             time,
-            comments,
-            email,
-            zenchefRoomId
+            comments || undefined,
+            email || undefined,
+            zenchefRoomId,
+            allergies || undefined
         );
 
         console.log("updateReservation", booking);
@@ -532,11 +579,92 @@ export class ReservationsService {
         if (booking.comments) {
             description += ` Special requests: ${booking.comments}.`;
         }
+        if (allergies) {
+            description += ` Allergies: ${allergies}.`;
+        }
 
         return new BookingObjectModel({
             ...booking,
             description,
         });
+    }
+
+    /**
+     * Gets a specific reservation by booking ID
+     * @param restaurantId - Internal restaurant ID
+     * @param bookingId - Zenchef booking ID
+     * @returns Complete booking object with all details
+     */
+    async getReservationById(
+        restaurantId: string,
+        bookingId: string
+    ): Promise<BookingObjectModel> {
+        this.logger.log(
+            `For restaurant "${restaurantId}", getting reservation "${bookingId}".`
+        );
+
+        const { zenchefId, apiToken } =
+            await this.getRestaurantCredentials(restaurantId);
+
+        const booking = await this.zenchefService.getBookingById(
+            zenchefId,
+            apiToken,
+            bookingId
+        );
+
+        // Map Zenchef booking data to our model
+        const fullName = `${booking.firstname} ${booking.lastname}`.trim();
+
+        // Generate human-readable description
+        let description = `Reservation details for Booking ID: ${booking.id}. `;
+        description += `Customer: ${fullName} (phone: ${booking.phone_number}`;
+        if (booking.email) {
+            description += `, email: ${booking.email}`;
+        }
+        description += `). `;
+        description += `Reservation: ${booking.nb_guests} people on ${booking.day} at ${booking.time}. `;
+        description += `Status: ${this.getStatusDescription(booking.status)}.`;
+        if (booking.comment) {
+            description += ` Special requests: ${booking.comment}.`;
+        }
+        if (booking.allergies) {
+            description += ` Allergies: ${booking.allergies}.`;
+        }
+        if (booking.shift_slot?.shift?.name) {
+            description += ` Seating area: ${booking.shift_slot.shift.name}.`;
+        }
+
+        return new BookingObjectModel({
+            bookingId: booking.id.toString(),
+            numberOfCustomers: booking.nb_guests,
+            phone: booking.phone_number || "",
+            name: fullName,
+            date: booking.day,
+            time: booking.time,
+            comments: booking.comment || undefined,
+            email: booking.email || undefined,
+            status: booking.status,
+            description,
+        });
+    }
+
+    /**
+     * Maps Zenchef booking status to human-readable description
+     */
+    private getStatusDescription(status: string): string {
+        const statusMap: Record<string, string> = {
+            waiting: "Waiting for confirmation",
+            waiting_customer: "Waiting for customer feedback",
+            confirmed: "Confirmed",
+            canceled: "Canceled",
+            refused: "Refused",
+            arrived: "Customer arrived",
+            seated: "Seated",
+            over: "Completed",
+            no_shown: "No show",
+        };
+
+        return statusMap[status] || status;
     }
 
     /**

@@ -1,0 +1,38 @@
+{
+    "type": "webhook",
+    "name": "cancel-reservation",
+    "description": "Cancel an existing reservation permanently. Only call after: (1) retrieving the booking via search-reservations or get-reservations-with-phone to obtain bookingId, (2) confirming the reservation details with customer, (3) getting explicit confirmation to cancel (e.g., 'Just to confirm, I'll cancel your reservation for [date] at [time]. Is that correct?').",
+    "disable_interruptions": false,
+    "force_pre_tool_speech": "force",
+    "assignments": [],
+    "tool_call_sound": null,
+    "tool_call_sound_behavior": "auto",
+    "execution_mode": "post_tool_speech",
+    "api_schema": {
+        "url": "https://resto-ai.adhityan.com/api/reservations/{bookingId}",
+        "method": "DELETE",
+        "path_params_schema": [
+            {
+                "id": "bookingId",
+                "type": "string",
+                "value_type": "llm_prompt",
+                "description": "Unique booking identifier obtained from search-reservations or get-reservations-with-phone tool response. This identifies which reservation to cancel. Example format: 'bk_abc123xyz'. CRITICAL: Always confirm cancellation details with customer before calling this tool.",
+                "dynamic_variable": "",
+                "constant_value": "",
+                "enum": null,
+                "is_system_provided": false,
+                "required": false
+            }
+        ],
+        "query_params_schema": [],
+        "request_body_schema": null,
+        "request_headers": [],
+        "auth_connection": {
+            "auth_connection_id": "auth_6601k887hn15f14ag2fqx7qck7d7"
+        }
+    },
+    "response_timeout_secs": 5,
+    "dynamic_variables": {
+        "dynamic_variable_placeholders": {}
+    }
+}

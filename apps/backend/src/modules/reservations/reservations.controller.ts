@@ -2,6 +2,7 @@ import {
     Body,
     Controller,
     Delete,
+    Get,
     Inject,
     Param,
     Post,
@@ -20,7 +21,6 @@ import {
     CancelReservationResponseModel,
     CheckAvailabilityRequestModel,
     CreateReservationRequestModel,
-    GetReservationByPhoneRequestModel,
     ReservationListResponseModel,
     SearchReservationsRequestModel,
     UpdateReservationRequestModel,
@@ -28,6 +28,7 @@ import {
 import { ReservationsService } from "./reservations.service";
 import { OnlyApp } from "../../decorators/user-api.decorator";
 import { AuthenticatedRequest } from "../../types/request";
+import { CustomerService } from "../customer/customer.service";
 
 /**
  * Controller for managing restaurant reservations via Zenchef API
@@ -37,6 +38,9 @@ import { AuthenticatedRequest } from "../../types/request";
 export class ReservationsController {
     @Inject()
     private readonly reservationsService: ReservationsService;
+
+    @Inject()
+    private readonly customerService: CustomerService;
 
     /**
      * Check table availability for a specific date, time, and party size
@@ -60,31 +64,15 @@ export class ReservationsController {
     }
 
     /**
-     * Get all reservations for a customer by phone number
-     */
-    @OnlyApp()
-    @Post("by-phone")
-    @ApiOperation({ summary: "Get reservations by phone number" })
-    @ApiOkResponse({ type: ReservationListResponseModel })
-    async getReservationByPhone(
-        @Req() req: AuthenticatedRequest,
-        @Body() body: GetReservationByPhoneRequestModel
-    ): Promise<ReservationListResponseModel> {
-        const restaurantId = req.loginPayload.userId;
-
-        return this.reservationsService.getReservationByPhone(
-            restaurantId,
-            body.phone,
-            body.date
-        );
-    }
-
-    /**
-     * Search reservations by date and/or customer name with fuzzy matching
+     * Search reservations by phone, email, date, and/or customer name
+     * All parameters are optional - can be called without parameters to get recent reservations
      */
     @OnlyApp()
     @Post("search")
-    @ApiOperation({ summary: "Search reservations by date and/or name" })
+    @ApiOperation({
+        summary:
+            "Search reservations by phone, email, date, and/or name (all optional)",
+    })
     @ApiOkResponse({ type: ReservationListResponseModel })
     async searchReservations(
         @Req() req: AuthenticatedRequest,
@@ -94,6 +82,8 @@ export class ReservationsController {
 
         return this.reservationsService.searchReservations(
             restaurantId,
+            body.phone,
+            body.email,
             body.date,
             body.customerName
         );
@@ -112,6 +102,56 @@ export class ReservationsController {
     ): Promise<BookingObjectModel> {
         const restaurantId = req.loginPayload.userId;
 
+        // Customer management: Find by email first (source of truth)
+        let customer = await this.customerService.findCustomerByEmail(
+            restaurantId,
+            body.email
+        );
+
+        if (customer) {
+            // Customer exists by email - update phone/name if different
+            const updates: { phone?: string; name?: string } = {};
+            if (customer.phone !== body.phone) {
+                updates.phone = body.phone;
+            }
+            if (customer.name !== body.name) {
+                updates.name = body.name;
+            }
+            if (Object.keys(updates).length > 0) {
+                await this.customerService.updateCustomer(
+                    restaurantId,
+                    customer.id,
+                    updates
+                );
+            }
+        } else {
+            // Not found by email - try phone
+            customer = await this.customerService.findCustomerByPhone(
+                restaurantId,
+                body.phone
+            );
+
+            if (customer) {
+                // Found by phone - update with email and name
+                await this.customerService.updateCustomer(
+                    restaurantId,
+                    customer.id,
+                    {
+                        email: body.email,
+                        name: body.name,
+                    }
+                );
+            } else {
+                // Create new customer
+                await this.customerService.createCustomer(
+                    restaurantId,
+                    body.name,
+                    body.email,
+                    body.phone
+                );
+            }
+        }
+
         return this.reservationsService.createReservation(
             restaurantId,
             body.numberOfCustomers,
@@ -121,16 +161,19 @@ export class ReservationsController {
             body.time,
             body.comments,
             body.email,
-            body.roomId
+            body.roomId,
+            body.allergies
         );
     }
 
     /**
-     * Update an existing reservation
+     * Update an existing reservation (partial updates supported)
      */
     @OnlyApp()
     @Put(":bookingId")
-    @ApiOperation({ summary: "Update an existing reservation" })
+    @ApiOperation({
+        summary: "Update an existing reservation (partial updates supported)",
+    })
     @ApiOkResponse({ type: BookingObjectModel })
     async updateReservation(
         @Req() req: AuthenticatedRequest,
@@ -142,14 +185,26 @@ export class ReservationsController {
         return this.reservationsService.updateReservation(
             restaurantId,
             bookingId,
-            body.numberOfCustomers,
-            body.phone,
-            body.name,
-            body.date,
-            body.time,
-            body.comments,
-            body.email,
-            body.roomId
+            body
+        );
+    }
+
+    /**
+     * Get a specific reservation by booking ID
+     */
+    @OnlyApp()
+    @Get(":bookingId")
+    @ApiOperation({ summary: "Get reservation by booking ID" })
+    @ApiOkResponse({ type: BookingObjectModel })
+    async getReservationById(
+        @Req() req: AuthenticatedRequest,
+        @Param("bookingId") bookingId: string
+    ): Promise<BookingObjectModel> {
+        const restaurantId = req.loginPayload.userId;
+
+        return this.reservationsService.getReservationById(
+            restaurantId,
+            bookingId
         );
     }
 

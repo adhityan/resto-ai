@@ -1,0 +1,886 @@
+{
+    "openapi": "3.0.3",
+    "info": {
+        "title": "Zenchef API Documentation / Generic customer",
+        "version": "1.0.0",
+        "description": "Zenchef API provides all resources relating to bookings necessary for any kind of Zenchef partner.\n\n## Authentication\nEvery call should provide the following headers:\n- Content-Type: application/json\n- auth-token: your authentication token\n- restaurantId: Zenchef restaurant identifier\n- PublisherName: Your publisher name provided by Zenchef\n- PublisherModelId: The identifier of the booking on your side\n\n## Error Codes\n- 200 OK\n- 404 Forbidden\n- 412 Duplicate content"
+    },
+    "servers": [
+        {
+            "url": "https://api.zenchef.com/api/v1",
+            "description": "Production"
+        },
+        {
+            "url": "https://api.preproduction.zenchef.io/api/v1",
+            "description": "Test"
+        }
+    ],
+    "components": {
+        "securitySchemes": {
+            "ZenchefAuth": {
+                "type": "apiKey",
+                "in": "header",
+                "name": "auth-token",
+                "description": "Zenchef authentication token"
+            },
+            "RestaurantId": {
+                "type": "apiKey",
+                "in": "header",
+                "name": "restaurantId",
+                "description": "Zenchef restaurant identifier"
+            },
+            "PublisherName": {
+                "type": "apiKey",
+                "in": "header",
+                "name": "PublisherName",
+                "description": "Publisher name provided by Zenchef"
+            },
+            "PublisherModelId": {
+                "type": "apiKey",
+                "in": "header",
+                "name": "PublisherModelId",
+                "description": "Identifier of the booking on your side"
+            }
+        },
+        "parameters": {
+            "restaurantId": {
+                "name": "restaurantId",
+                "in": "header",
+                "required": true,
+                "schema": { "type": "string" },
+                "description": "Zenchef restaurant identifier"
+            },
+            "auth-token": {
+                "name": "auth-token",
+                "in": "header",
+                "required": true,
+                "schema": { "type": "string" },
+                "description": "Zenchef authentication token"
+            },
+            "PublisherName": {
+                "name": "PublisherName",
+                "in": "header",
+                "required": true,
+                "schema": { "type": "string" },
+                "description": "Publisher name provided by Zenchef"
+            },
+            "PublisherModelId": {
+                "name": "PublisherModelId",
+                "in": "header",
+                "required": true,
+                "schema": { "type": "string" },
+                "description": "Identifier of the booking on your side"
+            }
+        },
+        "responses": {
+            "Unauthorized": {
+                "description": "Authentication information is missing or invalid"
+            },
+            "Forbidden": {
+                "description": "You do not have permission to access this resource"
+            },
+            "NotFound": { "description": "Resource not found" },
+            "DuplicateContent": { "description": "Duplicate content" }
+        },
+        "schemas": {
+            "Booking": {
+                "type": "object",
+                "description": "Booking object",
+                "properties": {
+                    "id": { "type": "string", "description": "Booking ID" },
+                    "restaurantId": {
+                        "type": "string",
+                        "description": "Zenchef restaurant identifier"
+                    },
+                    "customerId": {
+                        "type": "string",
+                        "description": "Customer ID"
+                    },
+                    "status": {
+                        "type": "string",
+                        "description": "Booking status",
+                        "enum": [
+                            "waiting",
+                            "waiting_customer",
+                            "confirmed",
+                            "canceled",
+                            "refused",
+                            "arrived",
+                            "seated",
+                            "over",
+                            "no_shown"
+                        ]
+                    },
+                    "time": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Booking time"
+                    },
+                    "tableId": {
+                        "type": "string",
+                        "description": "Assigned table ID"
+                    },
+                    "guests": {
+                        "type": "integer",
+                        "description": "Number of guests"
+                    },
+                    "comment": {
+                        "type": "string",
+                        "description": "Booking comment"
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Creation timestamp"
+                    },
+                    "updatedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Last update timestamp"
+                    },
+                    "offers": {
+                        "type": "array",
+                        "items": { "$ref": "#/components/schemas/Offer" },
+                        "description": "Applied offers"
+                    }
+                },
+                "required": [
+                    "restaurantId",
+                    "customerId",
+                    "status",
+                    "time",
+                    "guests"
+                ]
+            },
+            "CustomerSheet": {
+                "type": "object",
+                "description": "Customer sheet object",
+                "properties": {
+                    "id": { "type": "string", "description": "Customer ID" },
+                    "firstname": {
+                        "type": "string",
+                        "description": "First name"
+                    },
+                    "lastname": {
+                        "type": "string",
+                        "description": "Last name"
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "description": "Email address"
+                    },
+                    "phone": {
+                        "type": "string",
+                        "description": "Phone number"
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Creation timestamp"
+                    },
+                    "updatedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Last update timestamp"
+                    },
+                    "notes": {
+                        "type": "string",
+                        "description": "Customer notes"
+                    },
+                    "stats": {
+                        "type": "object",
+                        "properties": {
+                            "bookings": {
+                                "type": "integer",
+                                "description": "Number of bookings"
+                            },
+                            "reviews": {
+                                "type": "integer",
+                                "description": "Number of reviews"
+                            }
+                        }
+                    },
+                    "history": {
+                        "type": "array",
+                        "items": { "type": "object" },
+                        "description": "Booking/review history"
+                    }
+                },
+                "required": ["firstname", "lastname", "email"]
+            },
+            "Shift": {
+                "type": "object",
+                "description": "Shift object",
+                "properties": {
+                    "id": { "type": "string", "description": "Shift ID" },
+                    "restaurantId": {
+                        "type": "string",
+                        "description": "Restaurant ID"
+                    },
+                    "date": {
+                        "type": "string",
+                        "format": "date",
+                        "description": "Shift date"
+                    },
+                    "startTime": {
+                        "type": "string",
+                        "format": "time",
+                        "description": "Start time"
+                    },
+                    "endTime": {
+                        "type": "string",
+                        "format": "time",
+                        "description": "End time"
+                    },
+                    "tables": {
+                        "type": "array",
+                        "items": { "type": "string" },
+                        "description": "List of table IDs"
+                    },
+                    "isFull": {
+                        "type": "boolean",
+                        "description": "Is shift fully booked"
+                    }
+                },
+                "required": ["restaurantId", "date", "startTime", "endTime"]
+            },
+            "SpecialDay": {
+                "type": "object",
+                "description": "Special day object",
+                "properties": {
+                    "id": { "type": "string", "description": "Special day ID" },
+                    "restaurantId": {
+                        "type": "string",
+                        "description": "Restaurant ID"
+                    },
+                    "date": {
+                        "type": "string",
+                        "format": "date",
+                        "description": "Special day date"
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "Name of the special day"
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "Description"
+                    },
+                    "isClosed": {
+                        "type": "boolean",
+                        "description": "Is the restaurant closed"
+                    }
+                },
+                "required": ["restaurantId", "date", "name"]
+            },
+            "Offer": {
+                "type": "object",
+                "description": "Offer object",
+                "properties": {
+                    "id": { "type": "string", "description": "Offer ID" },
+                    "name": { "type": "string", "description": "Offer name" },
+                    "description": {
+                        "type": "string",
+                        "description": "Offer description"
+                    },
+                    "discount": {
+                        "type": "number",
+                        "format": "float",
+                        "description": "Discount value"
+                    },
+                    "discountType": {
+                        "type": "string",
+                        "enum": ["percentage", "fixed"],
+                        "description": "Type of discount"
+                    },
+                    "validFrom": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Offer valid from"
+                    },
+                    "validTo": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Offer valid to"
+                    }
+                },
+                "required": ["name", "discount", "discountType"]
+            },
+            "OrderInvoice": {
+                "type": "object",
+                "description": "Order invoice object",
+                "properties": {
+                    "id": { "type": "string", "description": "Invoice ID" },
+                    "bookingId": {
+                        "type": "string",
+                        "description": "Booking ID"
+                    },
+                    "amount": {
+                        "type": "integer",
+                        "description": "Total amount in cents"
+                    },
+                    "currency": {
+                        "type": "string",
+                        "description": "Currency code (e.g., EUR)"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": ["pending", "paid", "canceled"],
+                        "description": "Invoice status"
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Creation timestamp"
+                    },
+                    "updatedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Last update timestamp"
+                    },
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": { "type": "string" },
+                                "quantity": { "type": "integer" },
+                                "unitPrice": { "type": "integer" }
+                            }
+                        }
+                    }
+                },
+                "required": ["bookingId", "amount", "currency", "status"]
+            }
+        }
+    },
+    "security": [
+        {
+            "ZenchefAuth": [],
+            "RestaurantId": [],
+            "PublisherName": [],
+            "PublisherModelId": []
+        }
+    ],
+    "tags": [
+        { "name": "Booking", "description": "Operations related to bookings" },
+        {
+            "name": "CustomerSheets",
+            "description": "Operations related to customer sheets"
+        },
+        {
+            "name": "Shift Settings",
+            "description": "Operations related to shift settings"
+        },
+        {
+            "name": "Availabilities",
+            "description": "Operations related to availabilities"
+        },
+        {
+            "name": "Special day",
+            "description": "Operations related to special days"
+        },
+        { "name": "Invoice", "description": "Operations related to invoices" },
+        { "name": "Offers", "description": "Operations related to offers" },
+        { "name": "Webhook", "description": "Webhook endpoints" }
+    ],
+    "paths": {
+        "/booking/{bookingId}/changeStatus": {
+            "patch": {
+                "tags": ["Booking"],
+                "summary": "Change Status",
+                "description": "Changes the status of the booking id provided in the URL. The body is a JSON object with one key, \"status\" associated to the value of the new status. The result is a full booking object.",
+                "parameters": [
+                    {
+                        "name": "bookingId",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    },
+                    { "$ref": "#/components/parameters/auth-token" },
+                    { "$ref": "#/components/parameters/restaurantId" },
+                    { "$ref": "#/components/parameters/PublisherName" },
+                    { "$ref": "#/components/parameters/PublisherModelId" }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "status": { "type": "string" }
+                                },
+                                "required": ["status"]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Booking"
+                                }
+                            }
+                        }
+                    },
+                    "401": { "$ref": "#/components/responses/Unauthorized" },
+                    "404": { "$ref": "#/components/responses/NotFound" },
+                    "412": { "$ref": "#/components/responses/DuplicateContent" }
+                }
+            }
+        },
+        "/bookings/{bookingId}/changeTable": {
+            "patch": {
+                "tags": ["Booking"],
+                "summary": "Change Table",
+                "description": "Change the table for a booking.",
+                "parameters": [
+                    {
+                        "name": "bookingId",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    },
+                    { "$ref": "#/components/parameters/auth-token" },
+                    { "$ref": "#/components/parameters/restaurantId" },
+                    { "$ref": "#/components/parameters/PublisherName" },
+                    { "$ref": "#/components/parameters/PublisherModelId" }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "tableId": { "type": "string" }
+                                },
+                                "required": ["tableId"]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Booking"
+                                }
+                            }
+                        }
+                    },
+                    "401": { "$ref": "#/components/responses/Unauthorized" },
+                    "404": { "$ref": "#/components/responses/NotFound" },
+                    "412": { "$ref": "#/components/responses/DuplicateContent" }
+                }
+            }
+        },
+        "/bookings/{bookingId}/changeTime": {
+            "patch": {
+                "tags": ["Booking"],
+                "summary": "Change Time",
+                "description": "Changes the time of the booking id provided in the URL. The body is a JSON object with one key, \"time\" associated to the value of the new time. The result is a full booking object.",
+                "parameters": [
+                    {
+                        "name": "bookingId",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    },
+                    { "$ref": "#/components/parameters/auth-token" },
+                    { "$ref": "#/components/parameters/restaurantId" },
+                    { "$ref": "#/components/parameters/PublisherName" },
+                    { "$ref": "#/components/parameters/PublisherModelId" }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": { "time": { "type": "string" } },
+                                "required": ["time"]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Booking"
+                                }
+                            }
+                        }
+                    },
+                    "401": { "$ref": "#/components/responses/Unauthorized" },
+                    "404": { "$ref": "#/components/responses/NotFound" },
+                    "412": { "$ref": "#/components/responses/DuplicateContent" }
+                }
+            }
+        },
+        "/bookings/{bookingId}": {
+            "get": {
+                "tags": ["Booking"],
+                "summary": "Booking Detail",
+                "description": "Returns all the information about a booking. Pass the Zenchef ID of a booking to retrieve the detail.",
+                "parameters": [
+                    {
+                        "name": "bookingId",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    },
+                    { "$ref": "#/components/parameters/auth-token" },
+                    { "$ref": "#/components/parameters/restaurantId" },
+                    { "$ref": "#/components/parameters/PublisherName" },
+                    { "$ref": "#/components/parameters/PublisherModelId" }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Booking"
+                                }
+                            }
+                        }
+                    },
+                    "401": { "$ref": "#/components/responses/Unauthorized" },
+                    "404": { "$ref": "#/components/responses/NotFound" }
+                }
+            }
+        },
+        "/bookings": {
+            "get": {
+                "tags": ["Booking"],
+                "summary": "Booking Search",
+                "description": "Search through the restaurant bookings using filtering method. You can add as many filters as needed by incrementing a CGI array of filters.",
+                "parameters": [
+                    {
+                        "name": "filters",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "field": { "type": "string" },
+                                    "operator": { "type": "string" },
+                                    "value": { "type": "string" }
+                                }
+                            }
+                        },
+                        "description": "Array of filters (field, operator, value)"
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": { "type": "integer" }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": { "type": "integer" }
+                    },
+                    {
+                        "name": "sort[field]",
+                        "in": "query",
+                        "required": false,
+                        "schema": { "type": "string" }
+                    },
+                    {
+                        "name": "sort[order]",
+                        "in": "query",
+                        "required": false,
+                        "schema": { "type": "string" }
+                    },
+                    { "$ref": "#/components/parameters/auth-token" },
+                    { "$ref": "#/components/parameters/restaurantId" },
+                    { "$ref": "#/components/parameters/PublisherName" },
+                    { "$ref": "#/components/parameters/PublisherModelId" }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Booking"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": { "$ref": "#/components/responses/Unauthorized" },
+                    "404": { "$ref": "#/components/responses/NotFound" }
+                }
+            },
+            "post": {
+                "tags": ["Booking"],
+                "summary": "Create Booking",
+                "description": "Creates a booking. The body is a booking JSON object. The result is a full booking object.",
+                "parameters": [
+                    { "$ref": "#/components/parameters/auth-token" },
+                    { "$ref": "#/components/parameters/restaurantId" },
+                    { "$ref": "#/components/parameters/PublisherName" },
+                    { "$ref": "#/components/parameters/PublisherModelId" }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": { "$ref": "#/components/schemas/Booking" }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Booking"
+                                }
+                            }
+                        }
+                    },
+                    "401": { "$ref": "#/components/responses/Unauthorized" },
+                    "404": { "$ref": "#/components/responses/NotFound" },
+                    "412": { "$ref": "#/components/responses/DuplicateContent" }
+                }
+            }
+        },
+        "/customer-sheets": {
+            "get": {
+                "tags": ["CustomerSheets"],
+                "summary": "Customers List",
+                "description": "Sorted by date",
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": { "type": "integer" }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": { "type": "integer" }
+                    },
+                    {
+                        "name": "sort[field]",
+                        "in": "query",
+                        "required": false,
+                        "schema": { "type": "string" }
+                    },
+                    {
+                        "name": "sort[order]",
+                        "in": "query",
+                        "required": false,
+                        "schema": { "type": "string" }
+                    },
+                    {
+                        "name": "filters",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "field": { "type": "string" },
+                                    "operator": { "type": "string" },
+                                    "value": { "type": "string" }
+                                }
+                            }
+                        }
+                    },
+                    { "$ref": "#/components/parameters/auth-token" },
+                    { "$ref": "#/components/parameters/restaurantId" },
+                    { "$ref": "#/components/parameters/PublisherName" },
+                    { "$ref": "#/components/parameters/PublisherModelId" }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/CustomerSheet"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": { "$ref": "#/components/responses/Unauthorized" },
+                    "404": { "$ref": "#/components/responses/NotFound" }
+                }
+            },
+            "post": {
+                "tags": ["CustomerSheets"],
+                "summary": "Customers create",
+                "description": "Create a customer sheet.",
+                "parameters": [
+                    { "$ref": "#/components/parameters/auth-token" },
+                    { "$ref": "#/components/parameters/restaurantId" },
+                    { "$ref": "#/components/parameters/PublisherName" },
+                    { "$ref": "#/components/parameters/PublisherModelId" }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CustomerSheet"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CustomerSheet"
+                                }
+                            }
+                        }
+                    },
+                    "401": { "$ref": "#/components/responses/Unauthorized" },
+                    "404": { "$ref": "#/components/responses/NotFound" }
+                }
+            }
+        },
+        "/customer-sheets/{customerId}": {
+            "get": {
+                "tags": ["CustomerSheets"],
+                "summary": "Customers show",
+                "description": "Get a customer sheet by ID.",
+                "parameters": [
+                    {
+                        "name": "customerId",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    },
+                    { "$ref": "#/components/parameters/auth-token" },
+                    { "$ref": "#/components/parameters/restaurantId" },
+                    { "$ref": "#/components/parameters/PublisherName" },
+                    { "$ref": "#/components/parameters/PublisherModelId" }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CustomerSheet"
+                                }
+                            }
+                        }
+                    },
+                    "401": { "$ref": "#/components/responses/Unauthorized" },
+                    "404": { "$ref": "#/components/responses/NotFound" }
+                }
+            },
+            "put": {
+                "tags": ["CustomerSheets"],
+                "summary": "Customers update",
+                "description": "Update a customer sheet by ID.",
+                "parameters": [
+                    {
+                        "name": "customerId",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    },
+                    { "$ref": "#/components/parameters/auth-token" },
+                    { "$ref": "#/components/parameters/restaurantId" },
+                    { "$ref": "#/components/parameters/PublisherName" },
+                    { "$ref": "#/components/parameters/PublisherModelId" }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CustomerSheet"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CustomerSheet"
+                                }
+                            }
+                        }
+                    },
+                    "401": { "$ref": "#/components/responses/Unauthorized" },
+                    "404": { "$ref": "#/components/responses/NotFound" }
+                }
+            }
+        },
+        "/order-invoices": {
+            "post": {
+                "tags": ["Invoice"],
+                "summary": "Order-Invoices create",
+                "description": "Create an order invoice. Amounts are to be sent in cents (10€ = 1000)",
+                "parameters": [
+                    { "$ref": "#/components/parameters/auth-token" },
+                    { "$ref": "#/components/parameters/restaurantId" },
+                    { "$ref": "#/components/parameters/PublisherName" },
+                    { "$ref": "#/components/parameters/PublisherModelId" }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/OrderInvoice"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OrderInvoice"
+                                }
+                            }
+                        }
+                    },
+                    "401": { "$ref": "#/components/responses/Unauthorized" },
+                    "404": { "$ref": "#/components/responses/NotFound" }
+                }
+            }
+        }
+    }
+}

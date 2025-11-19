@@ -5,7 +5,7 @@ import NodeCache from "node-cache";
  * Can be reused across the monorepo for any caching needs.
  */
 export class CacheUtil<T = unknown> {
-    private cache: NodeCache;
+    private readonly cache: NodeCache;
 
     /**
      * Creates a new CacheUtil instance
