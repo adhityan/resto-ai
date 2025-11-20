@@ -19,11 +19,13 @@ import {
     AvailabilityResponseModel,
     BookingObjectModel,
     CancelReservationResponseModel,
+    CancelReservationByIdRequestModel,
     CheckAvailabilityRequestModel,
     CreateReservationRequestModel,
     ReservationListResponseModel,
     SearchReservationsRequestModel,
     UpdateReservationRequestModel,
+    UpdateReservationByIdRequestModel,
 } from "@repo/contracts";
 import { ReservationsService } from "./reservations.service";
 import { OnlyApp } from "../../decorators/user-api.decorator";
@@ -224,6 +226,52 @@ export class ReservationsController {
         return this.reservationsService.cancelReservation(
             restaurantId,
             bookingId
+        );
+    }
+
+    /**
+     * Update an existing reservation via POST (bookingId in body)
+     * Alternative to PUT /:bookingId for LLM platforms that don't support path parameters
+     */
+    @OnlyApp()
+    @Post("update")
+    @ApiOperation({
+        summary: "Update an existing reservation via POST (bookingId in body)",
+    })
+    @ApiOkResponse({ type: BookingObjectModel })
+    async updateReservationViaPost(
+        @Req() req: AuthenticatedRequest,
+        @Body() body: UpdateReservationByIdRequestModel
+    ): Promise<BookingObjectModel> {
+        const restaurantId = req.loginPayload.userId;
+        const { bookingId, ...updateData } = body;
+
+        return this.reservationsService.updateReservation(
+            restaurantId,
+            bookingId,
+            updateData
+        );
+    }
+
+    /**
+     * Cancel an existing reservation via POST (bookingId in body)
+     * Alternative to DELETE /:bookingId for LLM platforms that don't support path parameters
+     */
+    @OnlyApp()
+    @Post("cancel")
+    @ApiOperation({
+        summary: "Cancel a reservation via POST (bookingId in body)",
+    })
+    @ApiOkResponse({ type: CancelReservationResponseModel })
+    async cancelReservationViaPost(
+        @Req() req: AuthenticatedRequest,
+        @Body() body: CancelReservationByIdRequestModel
+    ): Promise<CancelReservationResponseModel> {
+        const restaurantId = req.loginPayload.userId;
+
+        return this.reservationsService.cancelReservation(
+            restaurantId,
+            body.bookingId
         );
     }
 }

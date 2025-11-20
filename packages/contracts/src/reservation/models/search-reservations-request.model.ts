@@ -1,4 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
+import { Transform } from "class-transformer";
 import { IsDateString, IsEmail, IsOptional, IsString } from "class-validator";
 
 /**
@@ -12,6 +13,7 @@ export class SearchReservationsRequestModel {
         required: false,
     })
     @IsOptional()
+    @Transform(({ value }) => (value === "" ? undefined : value))
     @IsString()
     phone?: string;
 
@@ -21,16 +23,19 @@ export class SearchReservationsRequestModel {
         required: false,
     })
     @IsOptional()
-    @IsString()
+    @Transform(({ value }) => (value === "" ? undefined : value))
     @IsEmail()
+    @IsString()
     email?: string;
 
     @ApiProperty({
-        description: "Optional date filter (ISO format YYYY-MM-DD). LLM should convert natural language dates to this format.",
+        description:
+            "Optional date filter (ISO format YYYY-MM-DD). LLM should convert natural language dates to this format.",
         example: "2025-10-25",
         required: false,
     })
     @IsOptional()
+    @Transform(({ value }) => (value === "" ? undefined : value))
     @IsDateString()
     date?: string;
 
@@ -40,6 +45,7 @@ export class SearchReservationsRequestModel {
         required: false,
     })
     @IsOptional()
+    @Transform(({ value }) => (value === "" ? undefined : value))
     @IsString()
     customerName?: string;
 }

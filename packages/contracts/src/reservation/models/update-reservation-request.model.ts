@@ -1,4 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
+import { Transform } from "class-transformer";
 import {
     IsDateString,
     IsEmail,
@@ -33,6 +34,7 @@ export class UpdateReservationRequestModel {
         required: false,
     })
     @IsOptional()
+    @Transform(({ value }) => (value === "" ? undefined : value))
     @IsString()
     phone?: string;
 
@@ -42,6 +44,7 @@ export class UpdateReservationRequestModel {
         required: false,
     })
     @IsOptional()
+    @Transform(({ value }) => (value === "" ? undefined : value))
     @IsString()
     @MaxLength(100, { message: "Name must be less than 100 characters" })
     name?: string;
@@ -52,15 +55,18 @@ export class UpdateReservationRequestModel {
         required: false,
     })
     @IsOptional()
+    @Transform(({ value }) => (value === "" ? undefined : value))
     @IsDateString()
     date?: string;
 
     @ApiProperty({
-        description: "Reservation time (24-hour HH:MM format, e.g., 19:00 for 7 PM)",
+        description:
+            "Reservation time (24-hour HH:MM format, e.g., 19:00 for 7 PM)",
         example: "19:00",
         required: false,
     })
     @IsOptional()
+    @Transform(({ value }) => (value === "" ? undefined : value))
     @Matches(/^([01]\d|2[0-3]):([0-5]\d)$/, {
         message: "Time must be in 24-hour HH:MM format (e.g., 19:00 for 7 PM)",
     })
@@ -72,6 +78,7 @@ export class UpdateReservationRequestModel {
         required: false,
     })
     @IsOptional()
+    @Transform(({ value }) => (value === "" ? undefined : value))
     @IsString()
     comments?: string;
 
@@ -81,6 +88,7 @@ export class UpdateReservationRequestModel {
         required: false,
     })
     @IsOptional()
+    @Transform(({ value }) => (value === "" ? undefined : value))
     @IsEmail()
     email?: string;
 
@@ -90,6 +98,7 @@ export class UpdateReservationRequestModel {
         required: false,
     })
     @IsOptional()
+    @Transform(({ value }) => (value === "" ? undefined : value))
     @IsString()
     roomId?: string;
 
@@ -99,6 +108,7 @@ export class UpdateReservationRequestModel {
         required: false,
     })
     @IsOptional()
+    @Transform(({ value }) => (value === "" ? undefined : value))
     @IsString()
     allergies?: string;
 }

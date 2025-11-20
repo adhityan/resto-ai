@@ -1,4 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
+import { Transform } from "class-transformer";
 import {
     IsDateString,
     IsEmail,
@@ -51,7 +52,8 @@ export class CreateReservationRequestModel {
     date: string;
 
     @ApiProperty({
-        description: "Reservation time (24-hour HH:MM format, e.g., 19:00 for 7 PM)",
+        description:
+            "Reservation time (24-hour HH:MM format, e.g., 19:00 for 7 PM)",
         example: "19:00",
     })
     @IsNotEmpty()
@@ -66,6 +68,7 @@ export class CreateReservationRequestModel {
         required: false,
     })
     @IsOptional()
+    @Transform(({ value }) => (value === "" ? undefined : value))
     @IsString()
     comments?: string;
 
@@ -83,6 +86,7 @@ export class CreateReservationRequestModel {
         required: false,
     })
     @IsOptional()
+    @Transform(({ value }) => (value === "" ? undefined : value))
     @IsString()
     roomId?: string;
 
@@ -92,6 +96,7 @@ export class CreateReservationRequestModel {
         required: false,
     })
     @IsOptional()
+    @Transform(({ value }) => (value === "" ? undefined : value))
     @IsString()
     allergies?: string;
 }

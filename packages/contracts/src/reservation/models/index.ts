@@ -5,6 +5,8 @@ export * from "./reservation-item.model";
 export * from "./reservation-list-response.model";
 export * from "./create-reservation-request.model";
 export * from "./update-reservation-request.model";
+export * from "./update-reservation-by-id-request.model";
 export * from "./cancel-reservation-response.model";
+export * from "./cancel-reservation-by-id-request.model";
 export * from "./booking-object.model";
 export * from "./seating-area.model";

@@ -45,9 +45,6 @@ Tool call result - {
   "description": "AVAILABILITY CHECK: 2 guests on 2025-11-10 at 20:00\n\nREQUESTED TIME STATUS: NOT AVAILABLE at 20:00\n\nAVAILABLE OFFERS (2 matching your party size):\n  1. \"Heated & Completely Covered Patio\" (ID: 71358)\n     Book your spot on our atmospheric terrace among the green trees! Enjoy under our umbrellas, warme...\n  2. \"Dinner\" (ID: 71935)\n     It’s time for you to meet Miri Mary. The place has been transformed into the most stunning locati...\n\nOTHER AVAILABLE TIMES ON 2025-11-10: None available\n\nIMPORTANT NOTES:\n- The \"seatingPreference\" parameter filters shifts by name only (e.g., \"Lunch\", \"Dinner\")\n- Actual seating area availability is provided in \"availableRoomTypes\" (for requested time) and \"otherAvailableSlotsForThatDay\" (per time slot)\n- Use the Zenchef Room ID when making a booking to specify the preferred room\n- Each time slot may have different seating areas available based on restaurant configuration"
 }
 
-Agent - That time is booked. We have space at 7:30 PM on the patio or inside for dinner. Would you like one of those?
-User - Do you have times after 8 p.m.?
-Agent - Checking availability...
 User - ...
 
 ## Agent's actual response in the test 
