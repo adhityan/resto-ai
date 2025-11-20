@@ -1,0 +1,32 @@
+## Test name
+Mention day if option is not for same day
+
+## Expected next response 
+When providing alternate options for the customer, if the options are not for the same day as the original request - then the day for the new options being provided must be mentioned.
+
+## Success Examples 
+Thursday is fully booked. I have 7:30 or 8:30 on Friday, does that work?
+
+## Failure Examples
+Friday is fully booked. I have 7:30 or 8:30 on Friday.
+
+
+## Test setup
+Agent - Hey! You've got Miri Mary. This is Saar. How can I help you?
+User - Hi. I was thinking if I could make a reservation.
+Agent - Great! I'd be happy to help you book a table. What date are you thinking of?
+User - Do you have a reservation for this Friday?
+Agent - Checking availability now
+
+Runtime - Tool succeeded: check-availability
+Tool call result - {
+  "otherAvailableSlotsForThatDay": [],
+  "nextAvailableDate": null,
+  "description": "AVAILABILITY CHECK: 2 guests on 2026-11-26\n\nOTHER AVAILABLE TIMES ON 2026-11-26: None available\n\nIMPORTANT NOTES:\n- Seating area availability is provided in \"availableRoomTypesOnRequestedTime\" (for requested time) and \"otherAvailableSlotsForThatDay\" (per time slot)\n- Use the seating area ID when making a booking to specify the preferred room\n- Each time slot may have different seating areas available based on restaurant configuration"
+}
+
+## Agent's actual response in the test 
+That date is fully booked. I have 7:30 or 8:30 on Friday?
+
+## Status
+Test failed. It is saying Friday is booked and then suggesting the dates for Saturday as Friday again.

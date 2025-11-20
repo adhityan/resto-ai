@@ -1,0 +1,57 @@
+## Test name
+Interuption after check availability
+
+## Expected next response 
+When you are interupted after calling check availability, do not respond with "I am here", etc. Instead respond back with the output of the tool call as you would have before the interuption.
+
+## Success Examples 
+I am checking up on availability. I see there is a table for 2 available for that time. Do you want to book?
+
+## Failure Examples
+I'm here. Would you like to check availability after 8 p.m.?
+
+
+## Test setup
+Agent - Hey! You've got Miri Mary. This is Aldert. How can I help you?
+User - Hey man, I want to make a reservation.
+Agent - Sure, let me check. What day would you like to book?
+User - Our day after tomorrow.
+Agent - Checking availability...
+
+Runtime - Tool succeeded: check-availability with parameters {
+  "date": "2025-11-10",
+  "numberOfPeople": 4
+}
+Tool call result - {
+  "otherAvailableSlotsForThatDay": [],
+  "nextAvailableDate": null,
+  "description": "AVAILABILITY CHECK: 4 guests on 2025-11-10\n\nAVAILABLE OFFERS (2 matching your party size):\n  1. \"Heated & Completely Covered Patio\" (ID: 71358)\n     Book your spot on our atmospheric terrace among the green trees! Enjoy under our umbrellas, warme...\n  2. \"Dinner\" (ID: 71935)\n     It’s time for you to meet Miri Mary. The place has been transformed into the most stunning locati...\n\nOTHER AVAILABLE TIMES ON 2025-11-10: None available\n\nIMPORTANT NOTES:\n- The \"seatingPreference\" parameter filters shifts by name only (e.g., \"Lunch\", \"Dinner\")\n- Actual seating area availability is provided in \"availableRoomTypes\" (for requested time) and \"otherAvailableSlotsForThatDay\" (per time slot)\n- Use the Zenchef Room ID when making a booking to specify the preferred room\n- Each time slot may have different seating areas available based on restaurant configuration"
+}
+
+Agent - We've got space for four people on Monday at 7:30 PM on the heated patio or for dinner inside. Which would you prefer?
+User - I need a table for two only. I'd say 8 p.m.
+Agent - Checking availability...
+
+Runtime - Tool succeeded: check-availability with parameters {
+  "date": "2025-11-10",
+  "time": "20:00",
+  "numberOfPeople": 2
+}
+Tool call result - {
+  "isRequestedSlotAvailable": false,
+  "availableRoomTypes": [],
+  "otherAvailableSlotsForThatDay": [],
+  "nextAvailableDate": null,
+  "description": "AVAILABILITY CHECK: 2 guests on 2025-11-10 at 20:00\n\nREQUESTED TIME STATUS: NOT AVAILABLE at 20:00\n\nAVAILABLE OFFERS (2 matching your party size):\n  1. \"Heated & Completely Covered Patio\" (ID: 71358)\n     Book your spot on our atmospheric terrace among the green trees! Enjoy under our umbrellas, warme...\n  2. \"Dinner\" (ID: 71935)\n     It’s time for you to meet Miri Mary. The place has been transformed into the most stunning locati...\n\nOTHER AVAILABLE TIMES ON 2025-11-10: None available\n\nIMPORTANT NOTES:\n- The \"seatingPreference\" parameter filters shifts by name only (e.g., \"Lunch\", \"Dinner\")\n- Actual seating area availability is provided in \"availableRoomTypes\" (for requested time) and \"otherAvailableSlotsForThatDay\" (per time slot)\n- Use the Zenchef Room ID when making a booking to specify the preferred room\n- Each time slot may have different seating areas available based on restaurant configuration"
+}
+
+Agent - That time is booked. We have space at 7:30 PM on the patio or inside for dinner. Would you like one of those?
+User - Do you have times after 8 p.m.?
+Agent - Checking availability...
+User - ...
+
+## Agent's actual response in the test 
+Just checking if you're still there? I can help you find a time after 8 p.m. if you'd like.
+
+## Status
+Test failed. It could have inferred that there are no other times available dates for that day from the "otherAvailableSlotsForThatDay": [] in one of the latter check-availability calls. But more importantly, in this test, it did not make the last check-availability call. When the user interuppted with "...", it lost track of its intent to make the check-availability call and just asked the user again if he wanted to check for availability. This failed this test.

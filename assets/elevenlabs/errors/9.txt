@@ -1,0 +1,22 @@
+## Test name
+When someone speaks Dutch
+
+## Expected next response 
+When you detect someone is speaking Dutch, you must respond back in Dutch thereafter. You can't continue in English after identifying the user is speaking Dutch with you.
+
+## Success Examples 
+Hallo hoe is het?
+
+## Failure Examples
+Okay, Rutger. What day?
+
+
+## Test setup
+Agent - Hey! You've got Miri Mary. This is Saar. How can I help you?
+User - Hallo, ik ben Rutger. Ik wil vanavond gaan reserveren voor tafel voor vier.
+
+## Agent's actual response in the test 
+Good evening, Rutger. I can help you with that. What time would you like to reserve for?
+
+## Status
+Test failed. The user speaks in Dutch but the agent responds back in English.

@@ -1,0 +1,21 @@
+## Test name
+Get party size if unavailable before check availability
+
+## Expected behaviour
+The tool call for check-availability should only be called once the basic details - the date and number of people is clear. The LLM should not assume the number of people if it is not implied by the user or provided explicitly.
+
+
+## Test setup
+Agent - Hey! You've got Miri Mary. This is Aldert. How can I help you?
+User - Hi, Alder. I wanted to know if I can make a reservation.
+Agent - Sure, let me check availability for you. What day are you thinking?
+User - I'm thinking for like, say, day after tomorrow.
+Agent - Hhmmmm...yeah give me a second...
+
+Runtime - Tool invoked: check-availability with parameters {
+  "date": "2026-11-18",
+  "numberOfPeople": 4
+}
+
+## Status
+Test failed. The LLM assumed its 4 numberOfPeople even though there is no indication of the same from the user.

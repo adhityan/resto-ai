@@ -1,0 +1,17 @@
+## Test name
+End call if no engagement
+
+# Expected
+Tool call end-call
+
+## Test setup
+Agent - Hey! You've got Miri Mary. This is Aldert. How can I help you?
+User - ...
+Agent - Hello? Are you still there?
+User -  ...
+
+## Agent's actual response in the test 
+Just checking in—still there?
+
+## Status
+Test failed. Desoute the user not acknowledging his presence the second time clearly, the agent simply asked again if he was there instead of ending the call. You have to be smart addressing this one - the agent should never terminate a call while the user is waiting or thinking. 

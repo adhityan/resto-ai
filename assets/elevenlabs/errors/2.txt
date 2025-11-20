@@ -1,0 +1,34 @@
+## Test name
+Check for availability when you have enough info
+
+# Expected
+Tool call check-availability with parameters {
+  "date": "2026-11-25",
+  "numberOfPeople": 3
+}
+
+
+## Test setup
+system__time_utc: 2025-11-19T05:46:06.993776+00:00
+
+Agent - Hey! You've got Miri Mary. This is Saar. How can I help you?
+User - Hey, what's the address?
+Agent - Van der Helstplein 15H in De Pijp, Amsterdam. It's right on the square, easy to find.
+User - Okay, nice. What's the menu like at the restaurant?
+Agent - We specialize in modern Indian cuisine with a focus on sharing plates. Our brunch features the famous Butter Chicken Benny, and dinner highlights our 12-hour Black Lentils. We’ve got plenty of vegetarian and vegan options too—actually, that’s one of our specialties.
+User - Okay great! You know what menu would you recommend for say three people?
+Agent - For three people, I’d suggest starting with the 12-hour Black Lentils and Butter Chicken as main dishes. Then add a few sharing starters like Gunpowder Okra Fries and Tandoori Mushrooms with Saffron Cream. Finish with the Strawberry & Mango Buttermilk Pancakes for brunch, or a sweet treat if you're dining in the evening. It’s a great mix of flavors and textures.
+User - Oh great! You know let's make a reservation.
+Agent - Perfect! What date would you like to book for?
+User - ...
+Agent - Just checking in—do you have a date in mind for your reservation?
+User -  Maybe next Tuesday?
+Agent - Hhmmmm...yeah give me a second...
+
+Runtime - Tool invoked: check-availability with parameters {
+  "date": "2026-11-24",
+  "numberOfPeople": 3
+}
+
+## Status
+Test failed. The tool was called for next Monday (the 24th) instead of next Tuesday (the 25th).

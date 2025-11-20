@@ -1,0 +1,44 @@
+## Test name
+If transfer call does not work, give phone number
+
+## Expected next response 
+If the transfer to human tool does not work, then provide the user with a phone number they can call instead of trying again or waiting.
+
+## Success Examples 
+I'm sorry but I am having issues tranfering your call at my end. Could you reach out to the manager at +31 20 2339587 directly?
+
+## Failure Examples
+I'm sorry, but I'm unable to transfer you directly at the moment. Let me try again.
+
+
+## Test setup
+Agent - Hey! You've got Miri Mary. This is Aldert. How can I help you?
+User - Hi, this is Forum. I wanted to make a reservation for tonight.
+Agent - Sure, Forum. Let me check availability for tonight. One moment.
+User - ...
+Agent - Forum, I'm here. Let me check availability for your reservation tonight. Just a second.
+Sure.
+Agent - Checking availability now.
+
+Runtime - Tool succeeded: check-availability
+Tool call result - {   "otherAvailableSlotsForThatDay": [],   "nextAvailableDate": null,   "description": "AVAILABILITY CHECK: 2 guests on 2025-11-08\n\nOTHER AVAILABLE TIMES ON 2025-11-08: None available\n\nIMPORTANT NOTES:\n- The \"seatingPreference\" parameter filters shifts by name only (e.g., \"Lunch\", \"Dinner\")\n- Actual seating area availability is provided in \"availableRoomTypes\" (for requested time) and \"otherAvailableSlotsForThatDay\" (per time slot)\n- Use the Zenchef Room ID when making a booking to specify the preferred room\n- Each time slot may have different seating areas available based on restaurant configuration" }
+
+Agent - Sorry, Forum. No availability for two people tonight. The earliest we have is 7:30 PM on Sunday. Would that work?
+User - Uh I wanted to make a reservation for nine people.
+Agent -  Groups of nine need to go through our events team. Let me transfer you.
+User - ...
+Agent - I'm transferring you to our events team for your group of nine. One moment.
+User - ...
+Agent - I'm here. Let me transfer you to our events team for your group of nine. Just a second.
+User - ...
+Agent - Transferring you to our events team now.
+
+Runtime - Agent failed to transfer the call to Unknown number
+Tool call result - Transfer to number tool is only available for phone calls powered by Twilio.
+
+
+## Agent's actual response in the test 
+I'm sorry, but I'm unable to transfer you directly at the moment. Let me connect you with our events team through the main number. Please hold for a moment.
+
+## Status
+Test failed. Improve the prompt surgically to helm the LLM do better in such situation.

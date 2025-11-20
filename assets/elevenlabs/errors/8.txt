@@ -1,0 +1,15 @@
+## Test name
+For large groups, it should call transfer call tool
+
+# Expected
+Tool call transfer_to_number
+
+## Test setup
+Agent - Hey! You've got Miri Mary. This is Aldert. How can I help you?
+User - I want some information about Miri Mary. If I want to book a reservation for 11 people, is there any mandatory restriction?
+
+## Agent's actual response in the test 
+For parties of 11, we do need to coordinate with our manager to ensure we can accommodate you properly. I can help you with that—would you like to proceed with booking for 11 people?
+
+## Status
+Test failed. For large calls, the LLM agent is expected to transfer the call. However in this case, it asked the user if it can help him make the booking.
