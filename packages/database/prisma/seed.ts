@@ -1,7 +1,12 @@
-import { PrismaClient, UserType } from "../generated/prisma";
+import "dotenv/config";
+import { PrismaClient, UserType } from "../generated/prisma/client";
+import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import { CryptoUtils } from "@repo/utils";
 
-const prisma = new PrismaClient();
+const adapter = new PrismaBetterSqlite3({
+    url: process.env.DATABASE_URL!,
+});
+const prisma = new PrismaClient({ adapter });
 
 async function main() {
     // Seed super admin user

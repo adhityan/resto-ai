@@ -1,6 +1,7 @@
 {
     "name": "@repo/database",
     "version": "0.0.1",
+    "type": "module",
     "description": "",
     "author": "K V Adhityan",
     "private": true,
@@ -15,33 +16,35 @@
         "db:deploy": "prisma migrate deploy",
         "db:seed": "prisma db seed"
     },
-    "main": "./dist/index.js",
-    "types": "./dist/index.d.ts",
+    "main": "./dist/src/index.js",
+    "types": "./dist/src/index.d.ts",
     "files": [
         "./dist/**"
     ],
     "exports": {
         ".": {
-            "types": "./dist/index.d.ts",
-            "default": "./dist/index.js"
+            "types": "./dist/src/index.d.ts",
+            "default": "./dist/src/index.js"
         },
         "./*": {
-            "types": "./dist/*.ts"
+            "types": "./dist/src/*.d.ts",
+            "default": "./dist/src/*.js"
         }
     },
     "dependencies": {
         "@nestjs/common": "^11.1.9",
-        "@prisma/client": "^6.19.0",
-        "@prisma/extension-accelerate": "^2.0.2"
+        "@prisma/adapter-better-sqlite3": "^7.0.1",
+        "@prisma/client": "^7.0.1",
+        "@prisma/extension-accelerate": "^3.0.0",
+        "better-sqlite3": "^12.5.0",
+        "dotenv": "^17.2.3"
     },
     "devDependencies": {
         "@repo/eslint-config": "*",
         "@repo/typescript-config": "*",
-        "prisma": "^6.19.0",
-        "ts-node": "^10.9.2",
+        "@types/better-sqlite3": "^7.6.13",
+        "prisma": "^7.0.1",
+        "tsx": "^4.21.0",
         "typescript": "^5.9.3"
-    },
-    "prisma": {
-        "seed": "ts-node prisma/seed.ts"
     }
 }

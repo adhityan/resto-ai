@@ -57,5 +57,4 @@ model Job {
 
 datasource db {
   provider = "sqlite"
-  url      = "file:/Users/adhityan/Code/video-gen/temp/database.db"
 }

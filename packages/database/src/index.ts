@@ -1,5 +1,10 @@
-export { JsonArray, JsonObject, JsonValue, InputJsonObject } from "../generated/prisma/runtime/library";
+export {
+    JsonArray,
+    JsonObject,
+    JsonValue,
+    InputJsonObject,
+} from "@prisma/client/runtime/client";
 
-export * from "./core/database.service";
-export * from "./core/database.module";
-export * from "../generated/prisma";
+export * from "./core/database.service.js";
+export * from "./core/database.module.js";
+export * from "../generated/prisma/client.js";

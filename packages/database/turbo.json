@@ -10,7 +10,7 @@
             "dependsOn": ["build"]
         },
         "db:generate": {
-            "outputs": ["node_modules/.prisma/**", "prisma/**"],
+            "outputs": ["prisma/generated/**"],
             "cache": false
         },
         "db:migrate": {
