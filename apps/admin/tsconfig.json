@@ -1,0 +1,12 @@
+{
+    "extends": "@repo/typescript-config/react.json",
+    "include": ["src", "vite.config.ts", "knip.config.ts"],
+    "compilerOptions": {
+        "baseUrl": ".",
+        "outDir": "./dist",
+        "paths": {
+            "@/*": ["./src/*"]
+        }
+    },
+    "exclude": ["node_modules"]
+}
