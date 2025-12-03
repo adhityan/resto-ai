@@ -39,6 +39,13 @@ enum ItemType {
   SALAD
 }
 
+enum OperationType {
+  CREATE_RESERVATION
+  UPDATE_RESERVATION
+  SEARCH_RESERVATION
+  CANCEL_RESERVATION
+}
+
 model Restaurant {
   id                   String  @id @default(uuid())
   name                 String
@@ -58,6 +65,7 @@ model Restaurant {
   calls           Call[]
   authentications RestaurantAuthentication[]
   reservations    Reservation[]
+  operationLogs   OperationLog[]
 
   @@index([incomingPhoneNumber])
 }
@@ -202,4 +210,16 @@ model User {
 
   updatedAt DateTime @updatedAt
   createdAt DateTime @default(now())
+}
+
+model OperationLog {
+  id           String        @id @default(uuid())
+  type         OperationType
+  restaurantId String
+  restaurant   Restaurant    @relation(fields: [restaurantId], references: [id])
+  createdAt    DateTime      @default(now())
+
+  @@index([createdAt])
+  @@index([type, createdAt])
+  @@index([restaurantId])
 }

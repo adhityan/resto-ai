@@ -1,5 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
-import { DatabaseService, CallStatus } from "@repo/database";
+import { DatabaseService, CallStatus, OperationType } from "@repo/database";
 import {
     DashboardResponseModel,
     OperationsOverviewResponseModel,
@@ -99,8 +99,6 @@ export class StatsService {
 
     /**
      * Get operations overview for the last 30 days
-     * Note: This is a placeholder - actual operation tracking would require
-     * additional logging of reservation operations
      */
     async getOperationsOverview(): Promise<OperationsOverviewResponseModel> {
         this.logger.log("Fetching operations overview");
@@ -108,18 +106,16 @@ export class StatsService {
         const now = new Date();
         const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-        // Get calls from last 30 days
-        const calls = await this.databaseService.call.findMany({
+        // Get operation logs from last 30 days
+        const logs = await this.databaseService.operationLog.findMany({
             where: {
-                startTime: { gte: thirtyDaysAgo },
+                createdAt: { gte: thirtyDaysAgo },
             },
-            orderBy: { startTime: "asc" },
+            orderBy: { createdAt: "asc" },
         });
 
-        // Group by date and count operations
-        // For now, we'll estimate operations based on calls with reservations
+        // Initialize data for each day
         const dataByDate = new Map<string, OperationsDataPointModel>();
-
         for (let i = 0; i < 30; i++) {
             const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
             const dateStr = date.toISOString().split("T")[0];
@@ -135,13 +131,25 @@ export class StatsService {
             );
         }
 
-        // Count calls with reservations as operations
-        // This is a simplified approach - real tracking would require operation logging
-        calls.forEach((call) => {
-            const dateStr = call.startTime.toISOString().split("T")[0];
+        // Count operations by type and date
+        logs.forEach((log) => {
+            const dateStr = log.createdAt.toISOString().split("T")[0];
             const existing = dataByDate.get(dateStr);
-            if (existing && call.zenchefReservationId) {
-                existing.newReservation += 1; // Simplified: count as new reservation
+            if (existing) {
+                switch (log.type) {
+                    case OperationType.CREATE_RESERVATION:
+                        existing.newReservation += 1;
+                        break;
+                    case OperationType.UPDATE_RESERVATION:
+                        existing.updateReservation += 1;
+                        break;
+                    case OperationType.CANCEL_RESERVATION:
+                        existing.cancelReservation += 1;
+                        break;
+                    case OperationType.SEARCH_RESERVATION:
+                        existing.searchReservation += 1;
+                        break;
+                }
             }
         });
 

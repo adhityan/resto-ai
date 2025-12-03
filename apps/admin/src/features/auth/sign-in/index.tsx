@@ -18,19 +18,24 @@ export default function SignIn() {
                     >
                         <path d="M15 6v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3" />
                     </svg>
-                    Payments Admin
+                    Restaurant Admin
                 </div>
 
                 <div className="relative z-20 mt-auto">
                     <blockquote className="space-y-2">
-                        <p className="text-lg">The central hub to monitor all your payments.</p>
+                        <p className="text-lg">
+                            The central hub to manage all your restaurant
+                            reservations.
+                        </p>
                     </blockquote>
                 </div>
             </div>
             <div className="lg:p-8">
                 <div className="mx-auto flex w-full flex-col justify-center space-y-2 sm:w-[350px]">
                     <div className="flex flex-col space-y-2 text-left">
-                        <h1 className="text-2xl font-semibold tracking-tight">Login</h1>
+                        <h1 className="text-2xl font-semibold tracking-tight">
+                            Login
+                        </h1>
                         <p className="text-muted-foreground text-sm">
                             Enter your email and password below <br />
                             to log into your account

@@ -58,17 +58,6 @@ RUN npx turbo run build --filter=@repo/utils
 RUN npx turbo run build --filter=@repo/contracts
 RUN npx turbo run build --filter=@repo/common
 
-# Compile the seed script to JavaScript in the same directory to preserve relative imports
-RUN npx tsc packages/database/prisma/seed.ts \
-    --outDir packages/database/prisma \
-    --module commonjs \
-    --moduleResolution node \
-    --esModuleInterop \
-    --resolveJsonModule \
-    --skipLibCheck \
-    --target ES2020 \
-    --lib ES2020
-
 # App builder stage: build backend app (only invalidated when backend source changes)
 FROM base AS app-builder
 WORKDIR /repo
@@ -100,7 +89,8 @@ COPY --from=package-builder /repo/packages/database/dist /repo/packages/database
 COPY --from=package-builder /repo/packages/database/generated/prisma /repo/packages/database/generated/prisma
 COPY --from=package-builder /repo/packages/database/prisma/schema.prisma /repo/packages/database/prisma/schema.prisma
 COPY --from=package-builder /repo/packages/database/prisma/migrations /repo/packages/database/prisma/migrations
-COPY --from=package-builder /repo/packages/database/prisma/seed.js /repo/packages/database/prisma/seed.js
+COPY --from=package-builder /repo/packages/database/prisma/seed.ts /repo/packages/database/prisma/seed.ts
+COPY --from=package-builder /repo/packages/database/prisma.config.ts /repo/packages/database/prisma.config.ts
 COPY --from=package-builder /repo/packages/database/package.json /repo/packages/database/package.json
 COPY --from=package-builder /repo/packages/contracts/dist /repo/packages/contracts/dist
 COPY --from=package-builder /repo/packages/contracts/package.json /repo/packages/contracts/package.json

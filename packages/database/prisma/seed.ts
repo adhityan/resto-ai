@@ -64,6 +64,27 @@ async function main() {
     console.log(`Name: ${restaurant.name}`);
     console.log(`Phone: ${restaurant.incomingPhoneNumber}`);
     console.log(`Zenchef ID: ${restaurant.zenchefId}`);
+
+    // Seed restaurant authentication credentials
+    console.log("Seeding restaurant authentication...");
+    const clientId = "adhityan";
+    const clientSecret = "fzLq8TN4ipsHJsv";
+    const clientSecretHash = CryptoUtils.encryptPassword(clientSecret, 10);
+
+    const restaurantAuth = await prisma.restaurantAuthentication.upsert({
+        where: { clientId },
+        update: {},
+        create: {
+            clientId,
+            clientSecret: clientSecretHash,
+            restaurantId: restaurant.id,
+            isActive: true,
+        },
+    });
+
+    console.log("Restaurant authentication seeded successfully!");
+    console.log(`Client ID: ${restaurantAuth.clientId}`);
+    console.log(`Restaurant ID: ${restaurantAuth.restaurantId}`);
 }
 
 main()

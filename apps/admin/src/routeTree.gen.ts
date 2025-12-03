@@ -11,7 +11,6 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
-import { Route as errorsPaymentSuccessRouteImport } from './routes/(errors)/payment-success'
 import { Route as errors503RouteImport } from './routes/(errors)/503'
 import { Route as errors500RouteImport } from './routes/(errors)/500'
 import { Route as errors404RouteImport } from './routes/(errors)/404'
@@ -19,7 +18,6 @@ import { Route as errors403RouteImport } from './routes/(errors)/403'
 import { Route as errors401RouteImport } from './routes/(errors)/401'
 import { Route as authSignUpRouteImport } from './routes/(auth)/sign-up'
 import { Route as authSignInRouteImport } from './routes/(auth)/sign-in'
-import { Route as authPaymentProcessingRouteImport } from './routes/(auth)/payment-processing'
 import { Route as authOtpRouteImport } from './routes/(auth)/otp'
 import { Route as authForgotPasswordRouteImport } from './routes/(auth)/forgot-password'
 import { Route as AuthenticatedSettingsRouteRouteImport } from './routes/_authenticated/settings/route'
@@ -50,11 +48,6 @@ const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const errorsPaymentSuccessRoute = errorsPaymentSuccessRouteImport.update({
-  id: '/(errors)/payment-success',
-  path: '/payment-success',
-  getParentRoute: () => rootRouteImport,
 } as any)
 const errors503Route = errors503RouteImport.update({
   id: '/(errors)/503',
@@ -89,11 +82,6 @@ const authSignUpRoute = authSignUpRouteImport.update({
 const authSignInRoute = authSignInRouteImport.update({
   id: '/(auth)/sign-in',
   path: '/sign-in',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const authPaymentProcessingRoute = authPaymentProcessingRouteImport.update({
-  id: '/(auth)/payment-processing',
-  path: '/payment-processing',
   getParentRoute: () => rootRouteImport,
 } as any)
 const authOtpRoute = authOtpRouteImport.update({
@@ -222,7 +210,6 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AuthenticatedSettingsRouteRouteWithChildren
   '/forgot-password': typeof authForgotPasswordRoute
   '/otp': typeof authOtpRoute
-  '/payment-processing': typeof authPaymentProcessingRoute
   '/sign-in': typeof authSignInRoute
   '/sign-up': typeof authSignUpRoute
   '/401': typeof errors401Route
@@ -230,7 +217,6 @@ export interface FileRoutesByFullPath {
   '/404': typeof errors404Route
   '/500': typeof errors500Route
   '/503': typeof errors503Route
-  '/payment-success': typeof errorsPaymentSuccessRoute
   '/': typeof AuthenticatedIndexRoute
   '/calls/$callId': typeof AuthenticatedCallsCallIdRoute
   '/customers/$customerId': typeof AuthenticatedCustomersCustomerIdRoute
@@ -254,7 +240,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/forgot-password': typeof authForgotPasswordRoute
   '/otp': typeof authOtpRoute
-  '/payment-processing': typeof authPaymentProcessingRoute
   '/sign-in': typeof authSignInRoute
   '/sign-up': typeof authSignUpRoute
   '/401': typeof errors401Route
@@ -262,7 +247,6 @@ export interface FileRoutesByTo {
   '/404': typeof errors404Route
   '/500': typeof errors500Route
   '/503': typeof errors503Route
-  '/payment-success': typeof errorsPaymentSuccessRoute
   '/': typeof AuthenticatedIndexRoute
   '/calls/$callId': typeof AuthenticatedCallsCallIdRoute
   '/customers/$customerId': typeof AuthenticatedCustomersCustomerIdRoute
@@ -289,7 +273,6 @@ export interface FileRoutesById {
   '/_authenticated/settings': typeof AuthenticatedSettingsRouteRouteWithChildren
   '/(auth)/forgot-password': typeof authForgotPasswordRoute
   '/(auth)/otp': typeof authOtpRoute
-  '/(auth)/payment-processing': typeof authPaymentProcessingRoute
   '/(auth)/sign-in': typeof authSignInRoute
   '/(auth)/sign-up': typeof authSignUpRoute
   '/(errors)/401': typeof errors401Route
@@ -297,7 +280,6 @@ export interface FileRoutesById {
   '/(errors)/404': typeof errors404Route
   '/(errors)/500': typeof errors500Route
   '/(errors)/503': typeof errors503Route
-  '/(errors)/payment-success': typeof errorsPaymentSuccessRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/calls/$callId': typeof AuthenticatedCallsCallIdRoute
   '/_authenticated/customers/$customerId': typeof AuthenticatedCustomersCustomerIdRoute
@@ -324,7 +306,6 @@ export interface FileRouteTypes {
     | '/settings'
     | '/forgot-password'
     | '/otp'
-    | '/payment-processing'
     | '/sign-in'
     | '/sign-up'
     | '/401'
@@ -332,7 +313,6 @@ export interface FileRouteTypes {
     | '/404'
     | '/500'
     | '/503'
-    | '/payment-success'
     | '/'
     | '/calls/$callId'
     | '/customers/$customerId'
@@ -356,7 +336,6 @@ export interface FileRouteTypes {
   to:
     | '/forgot-password'
     | '/otp'
-    | '/payment-processing'
     | '/sign-in'
     | '/sign-up'
     | '/401'
@@ -364,7 +343,6 @@ export interface FileRouteTypes {
     | '/404'
     | '/500'
     | '/503'
-    | '/payment-success'
     | '/'
     | '/calls/$callId'
     | '/customers/$customerId'
@@ -390,7 +368,6 @@ export interface FileRouteTypes {
     | '/_authenticated/settings'
     | '/(auth)/forgot-password'
     | '/(auth)/otp'
-    | '/(auth)/payment-processing'
     | '/(auth)/sign-in'
     | '/(auth)/sign-up'
     | '/(errors)/401'
@@ -398,7 +375,6 @@ export interface FileRouteTypes {
     | '/(errors)/404'
     | '/(errors)/500'
     | '/(errors)/503'
-    | '/(errors)/payment-success'
     | '/_authenticated/'
     | '/_authenticated/calls/$callId'
     | '/_authenticated/customers/$customerId'
@@ -424,7 +400,6 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   authForgotPasswordRoute: typeof authForgotPasswordRoute
   authOtpRoute: typeof authOtpRoute
-  authPaymentProcessingRoute: typeof authPaymentProcessingRoute
   authSignInRoute: typeof authSignInRoute
   authSignUpRoute: typeof authSignUpRoute
   errors401Route: typeof errors401Route
@@ -432,7 +407,6 @@ export interface RootRouteChildren {
   errors404Route: typeof errors404Route
   errors500Route: typeof errors500Route
   errors503Route: typeof errors503Route
-  errorsPaymentSuccessRoute: typeof errorsPaymentSuccessRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -450,13 +424,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/(errors)/payment-success': {
-      id: '/(errors)/payment-success'
-      path: '/payment-success'
-      fullPath: '/payment-success'
-      preLoaderRoute: typeof errorsPaymentSuccessRouteImport
-      parentRoute: typeof rootRouteImport
     }
     '/(errors)/503': {
       id: '/(errors)/503'
@@ -505,13 +472,6 @@ declare module '@tanstack/react-router' {
       path: '/sign-in'
       fullPath: '/sign-in'
       preLoaderRoute: typeof authSignInRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/(auth)/payment-processing': {
-      id: '/(auth)/payment-processing'
-      path: '/payment-processing'
-      fullPath: '/payment-processing'
-      preLoaderRoute: typeof authPaymentProcessingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/(auth)/otp': {
@@ -735,7 +695,6 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   authForgotPasswordRoute: authForgotPasswordRoute,
   authOtpRoute: authOtpRoute,
-  authPaymentProcessingRoute: authPaymentProcessingRoute,
   authSignInRoute: authSignInRoute,
   authSignUpRoute: authSignUpRoute,
   errors401Route: errors401Route,
@@ -743,7 +702,6 @@ const rootRouteChildren: RootRouteChildren = {
   errors404Route: errors404Route,
   errors500Route: errors500Route,
   errors503Route: errors503Route,
-  errorsPaymentSuccessRoute: errorsPaymentSuccessRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

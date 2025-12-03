@@ -67,9 +67,10 @@ async function bootstrap() {
     if (pathPrefix) {
         app.setGlobalPrefix(pathPrefix);
     }
+
     // Security: Ensure ALLOWED_ORIGINS is set in production
     app.enableCors({
-        origin: ["http://localhost:5173", "http://localhost:3001"],
+        origin: ["http://localhost:5173", "https://resto-ai.adhityan.com"],
         methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
         credentials: true,
         maxAge: 86400, // 24 hours

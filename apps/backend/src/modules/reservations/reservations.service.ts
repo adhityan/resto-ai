@@ -9,6 +9,7 @@ import {
     DatabaseService,
     Reservation,
     ReservationStatus,
+    OperationType,
 } from "@repo/database";
 import { CacheUtil, normalizePhoneNumber } from "@repo/utils";
 import { ZenchefService } from "../zenchef/zenchef.service";
@@ -467,6 +468,11 @@ export class ReservationsService {
             description += `Details: ${summaries.join("; ")}.`;
         }
 
+        // Log search operation
+        await this.databaseService.operationLog.create({
+            data: { type: OperationType.SEARCH_RESERVATION, restaurantId },
+        });
+
         return new ReservationListResponseModel({
             reservations,
             description,
@@ -552,6 +558,11 @@ export class ReservationsService {
         this.logger.log(
             `Created and synced reservation ${booking.bookingId} to local database`
         );
+
+        // Log create operation
+        await this.databaseService.operationLog.create({
+            data: { type: OperationType.CREATE_RESERVATION, restaurantId },
+        });
 
         // Generate human-readable description
         let description = `Successfully created a new reservation. `;
@@ -681,6 +692,11 @@ export class ReservationsService {
         this.logger.log(
             `Updated and synced reservation ${booking.bookingId} to local database`
         );
+
+        // Log update operation
+        await this.databaseService.operationLog.create({
+            data: { type: OperationType.UPDATE_RESERVATION, restaurantId },
+        });
 
         // Generate human-readable description
         let description = `Successfully updated the reservation. `;
@@ -824,6 +840,11 @@ export class ReservationsService {
         this.logger.log(
             `Cancelled and synced reservation ${bookingId} to local database`
         );
+
+        // Log cancel operation
+        await this.databaseService.operationLog.create({
+            data: { type: OperationType.CANCEL_RESERVATION, restaurantId },
+        });
 
         // Generate human-readable description
         const description = `Successfully cancelled the reservation with Booking ID: ${bookingId}. The reservation has been removed from the system.`;
