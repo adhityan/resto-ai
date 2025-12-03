@@ -13,8 +13,10 @@ export class CreateRestaurantModel {
     @ApiProperty()
     @IsNotEmpty()
     @IsString()
-    @MaxLength(500, { message: "Base path must be less than 500 characters" })
-    basePath: string;
+    @MaxLength(20, {
+        message: "Phone number must be less than 20 characters",
+    })
+    incomingPhoneNumber: string;
 
     @ApiProperty()
     @IsNotEmpty()

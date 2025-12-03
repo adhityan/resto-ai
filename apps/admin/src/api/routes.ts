@@ -1,23 +1,25 @@
 export const API = {
     // Stats/Dashboard
     DASHBOARD: "/stats/dashboard",
-    REVENUE_OVERVIEW: "/stats/revenue-overview",
-    CUSTOMER_TREND: "/stats/customer-trend",
-    REVENUE_APP_BREAKDOWN: "/stats/revenue-app-breakdown",
+    OPERATIONS_OVERVIEW: "/stats/operations-overview",
+    CALL_DURATION_TREND: "/stats/call-duration-trend",
+    LANGUAGE_BREAKDOWN: "/stats/language-breakdown",
 
-    // Payments
-    PAYMENTS: "/payments",
-    PAYMENT_DETAIL: (id: string) => `/payments/${id}`,
+    // Calls
+    CALLS: "/calls",
+    CALL_DETAIL: (id: string) => `/calls/${id}`,
+    ACTIVE_CALLS_COUNT: "/calls/active-count",
 
-    // Apps
-    APPS: "/apps",
-    APP_DETAIL: (id: string) => `/apps/${id}`,
-    APP_AUTHENTICATIONS: (id: string) => `/apps/${id}/authentications`,
-    DELETE_APP_AUTHENTICATION: (appId: string, authId: string) => `/apps/${appId}/authentications/${authId}`,
+    // Reservations (from local database via admin API)
+    RESERVATIONS: "/reservations/admin/list",
+    RESERVATION_DETAIL: (id: string) => `/reservations/admin/${id}`,
 
-    // Products
-    PRODUCTS: "/products",
-    PRODUCT_DETAIL: (id: string) => `/products/${id}`,
+    // Restaurants
+    RESTAURANTS: "/restaurants",
+    RESTAURANT_DETAIL: (id: string) => `/restaurants/${id}`,
+    RESTAURANT_AUTHENTICATIONS: (id: string) => `/restaurants/${id}/authentications`,
+    DELETE_RESTAURANT_AUTHENTICATION: (restaurantId: string, authId: string) =>
+        `/restaurants/${restaurantId}/authentications/${authId}`,
 
     // Customers
     CUSTOMERS: "/customers",
@@ -30,11 +32,4 @@ export const API = {
     LOGIN: "/auth/user/login",
     REGISTER: "/auth/user/register",
     ME: "/auth/user",
-    CREATE_APP_AUTHENTICATION: "/auth/app/authentication",
-
-    // Session
-    SESSION_TRACK: (sessionId: string) => `/session/track?session=${sessionId}`,
-
-    // Currency
-    SUPPORTED_CURRENCIES: "/currency/supported",
 } as const;

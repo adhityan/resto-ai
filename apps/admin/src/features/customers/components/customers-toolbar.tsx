@@ -3,82 +3,42 @@ import { useQuery } from "@tanstack/react-query";
 import api from "@/api";
 import { API } from "@/api/routes";
 import { useCustomersStore } from "@/stores/customersStore";
-import { MultiSelectFilter } from "@/features/payments/components/multi-select-filter";
-import type { ApplicationListItemModel, ProductListResponseModel } from "@repo/contracts";
+import { DataTableFacetedFilter } from "@/components/data-table-faceted-filter";
+import { useRestaurantsStore } from "@/stores/restaurantsStore";
 
 export default function CustomersToolbar() {
     const filters = useCustomersStore((s) => s.filters);
     const setFilterValue = useCustomersStore((s) => s.setFilterValue);
+    const restaurants = useRestaurantsStore((s) => s.restaurants);
+    const setRestaurants = useRestaurantsStore((s) => s.setRestaurants);
 
-    // Fetch apps for filter options
-    const { data: apps = [] } = useQuery<ApplicationListItemModel[]>({
-        queryKey: ["apps"],
-        queryFn: async () => (await api.get(API.APPS)).data,
+    // Fetch restaurants for filter options
+    useQuery({
+        queryKey: ["restaurants"],
+        queryFn: async () => {
+            const response = await api.get(API.RESTAURANTS);
+            setRestaurants(response.data);
+            return response.data;
+        },
     });
 
-    // Fetch products for filter options
-    const { data: productsResp } = useQuery<ProductListResponseModel>({
-        queryKey: ["products"],
-        queryFn: async () => (await api.get(API.PRODUCTS)).data,
-    });
-
-    const applicationOptions = useMemo(() => {
-        return apps.map((app) => app.name);
-    }, [apps]);
-
-    const productOptions = useMemo(() => {
-        return productsResp?.items.map((product) => product.name) ?? [];
-    }, [productsResp]);
-
-    // Create mapping from names to IDs for filtering
-    const appNameToId = useMemo(() => {
-        const map = new Map<string, string>();
-        apps.forEach((app) => map.set(app.name, app.id));
-        return map;
-    }, [apps]);
-
-    const productNameToId = useMemo(() => {
-        const map = new Map<string, string>();
-        productsResp?.items.forEach((product) => map.set(product.name, product.id));
-        return map;
-    }, [productsResp]);
-
-    // Create reverse mapping from IDs to names for display
-    const appIdToName = useMemo(() => {
-        const map = new Map<string, string>();
-        apps.forEach((app) => map.set(app.id, app.name));
-        return map;
-    }, [apps]);
-
-    const productIdToName = useMemo(() => {
-        const map = new Map<string, string>();
-        productsResp?.items.forEach((product) => map.set(product.id, product.name));
-        return map;
-    }, [productsResp]);
-
-    // Convert selected IDs to names for display
-    const selectedAppNames = filters.applications.map((id) => appIdToName.get(id) ?? id).filter(Boolean);
-    const selectedProductNames = filters.products.map((id) => productIdToName.get(id) ?? id).filter(Boolean);
+    const restaurantOptions = useMemo(() => {
+        return restaurants.map((r) => ({
+            label: r.name,
+            value: r.id,
+        }));
+    }, [restaurants]);
 
     return (
         <div className="flex items-center justify-between">
             <div className="flex flex-1 items-center space-x-2">
-                <MultiSelectFilter
-                    title="Application"
-                    options={applicationOptions}
-                    selected={selectedAppNames}
-                    onChange={(names) => {
-                        const ids = names.map((name) => appNameToId.get(name)).filter(Boolean) as string[];
-                        setFilterValue("applications", ids);
-                    }}
-                />
-                <MultiSelectFilter
-                    title="Product"
-                    options={productOptions}
-                    selected={selectedProductNames}
-                    onChange={(names) => {
-                        const ids = names.map((name) => productNameToId.get(name)).filter(Boolean) as string[];
-                        setFilterValue("products", ids);
+                <DataTableFacetedFilter
+                    title="Restaurant"
+                    options={restaurantOptions}
+                    value={filters.restaurantId ? new Set([filters.restaurantId]) : new Set()}
+                    onChange={(values) => {
+                        const value = Array.from(values)[0];
+                        setFilterValue("restaurantId", value || undefined);
                     }}
                 />
             </div>

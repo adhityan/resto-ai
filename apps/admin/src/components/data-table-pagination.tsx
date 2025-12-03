@@ -1,30 +1,22 @@
 import { ChevronLeftIcon, ChevronRightIcon, DoubleArrowLeftIcon, DoubleArrowRightIcon } from "@radix-ui/react-icons";
 import { Table } from "@tanstack/react-table";
-import { PaymentListFilters } from "@/stores/paymentsStore";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface DataTablePaginationProps<TData> {
     table: Table<TData>;
-    total?: number;
-    filters?: PaymentListFilters;
 }
 
-export function DataTablePagination<TData>({ table, total, filters }: DataTablePaginationProps<TData>) {
-    const isServerSide = total !== undefined && filters !== undefined;
-
-    const pageCount = isServerSide ? Math.ceil(total / filters.take) : table.getPageCount();
-
-    const pageIndex = isServerSide ? Math.floor(filters.skip / filters.take) : table.getState().pagination.pageIndex;
-
-    const canPreviousPage = isServerSide ? filters.skip > 0 : table.getCanPreviousPage();
-
-    const canNextPage = isServerSide ? filters.skip + filters.take < total : table.getCanNextPage();
+export function DataTablePagination<TData>({ table }: DataTablePaginationProps<TData>) {
+    const pageCount = table.getPageCount();
+    const pageIndex = table.getState().pagination.pageIndex;
+    const canPreviousPage = table.getCanPreviousPage();
+    const canNextPage = table.getCanNextPage();
 
     return (
         <div className="flex items-center justify-between overflow-clip px-2" style={{ overflowClipMargin: 1 }}>
             <div className="text-muted-foreground hidden flex-1 text-sm sm:block">
-                {table.getFilteredSelectedRowModel().rows.length} of {isServerSide ? total : table.getFilteredRowModel().rows.length} row(s)
+                {table.getFilteredSelectedRowModel().rows.length} of {table.getFilteredRowModel().rows.length} row(s)
                 selected.
             </div>
             <div className="flex items-center sm:space-x-6 lg:space-x-8">

@@ -12,6 +12,7 @@ import { AuthService } from "../auth.service";
 import { AuthenticatedRequest } from "src/types/request";
 import { IS_PUBLIC_KEY } from "src/decorators/public.decorator";
 import { UserType } from "@repo/database";
+import { RestaurantService } from "../../restaurant/restaurant.service";
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -19,6 +20,9 @@ export class AuthGuard implements CanActivate {
 
     @Inject()
     private authService: AuthService;
+
+    @Inject()
+    private restaurantService: RestaurantService;
 
     @Inject()
     private reflector: Reflector;
@@ -40,12 +44,13 @@ export class AuthGuard implements CanActivate {
             // so that we can access it in our route handlers
             if (role === undefined) return true; //API Access role not set. This is isAuthenticated route.
             if (role === "APP") {
-                // Check for basic authentication first
-                const basicAuthResult = this.checkBasicAuth(request);
-                if (basicAuthResult) {
+                // Check for basic authentication using database credentials
+                const restaurant = await this.checkBasicAuth(request);
+                if (restaurant) {
                     request["loginPayload"] = {
-                        userId: "353816f8-4204-406c-842f-529347706874",
+                        userId: restaurant.id,
                         userType: "Restaurant",
+                        restaurantId: restaurant.id,
                     };
                     return true;
                 } else return false;
@@ -75,10 +80,12 @@ export class AuthGuard implements CanActivate {
         }
     }
 
-    private checkBasicAuth(request: AuthenticatedRequest): boolean {
+    private async checkBasicAuth(
+        request: AuthenticatedRequest
+    ): Promise<{ id: string; name: string } | null> {
         const authHeader = request.headers["authorization"];
         if (!authHeader || !authHeader.startsWith("Basic ")) {
-            return false;
+            return null;
         }
 
         try {
@@ -88,12 +95,33 @@ export class AuthGuard implements CanActivate {
                 base64Credentials,
                 "base64"
             ).toString("ascii");
-            const [username, password] = credentials.split(":");
+            const [clientId, clientSecret] = credentials.split(":");
 
-            // Check if credentials match the required values
-            return username === "adhityan" && password === "fzLq8TN4ipsHJsv";
-        } catch {
-            return false;
+            if (!clientId || !clientSecret) {
+                return null;
+            }
+
+            // Verify credentials against the database
+            const restaurant =
+                await this.restaurantService.verifyClientCredentials(
+                    clientId,
+                    clientSecret
+                );
+
+            if (!restaurant) {
+                this.logger.warn(
+                    `Invalid Basic Auth credentials for clientId: ${clientId}`
+                );
+                return null;
+            }
+
+            this.logger.debug(
+                `Basic Auth successful for restaurant: ${restaurant.name}`
+            );
+            return { id: restaurant.id, name: restaurant.name };
+        } catch (error) {
+            this.logger.error("Error during Basic Auth verification", error);
+            return null;
         }
     }
 

@@ -25,21 +25,21 @@ import { Route as authForgotPasswordRouteImport } from './routes/(auth)/forgot-p
 import { Route as AuthenticatedSettingsRouteRouteImport } from './routes/_authenticated/settings/route'
 import { Route as AuthenticatedUsersIndexRouteImport } from './routes/_authenticated/users/index'
 import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authenticated/settings/index'
-import { Route as AuthenticatedProductsIndexRouteImport } from './routes/_authenticated/products/index'
-import { Route as AuthenticatedPaymentsIndexRouteImport } from './routes/_authenticated/payments/index'
+import { Route as AuthenticatedReservationsIndexRouteImport } from './routes/_authenticated/reservations/index'
 import { Route as AuthenticatedHelpCenterIndexRouteImport } from './routes/_authenticated/help-center/index'
 import { Route as AuthenticatedCustomersIndexRouteImport } from './routes/_authenticated/customers/index'
 import { Route as AuthenticatedChatsIndexRouteImport } from './routes/_authenticated/chats/index'
+import { Route as AuthenticatedCallsIndexRouteImport } from './routes/_authenticated/calls/index'
 import { Route as AuthenticatedSettingsNotificationsRouteImport } from './routes/_authenticated/settings/notifications'
 import { Route as AuthenticatedSettingsDisplayRouteImport } from './routes/_authenticated/settings/display'
 import { Route as AuthenticatedSettingsAppearanceRouteImport } from './routes/_authenticated/settings/appearance'
 import { Route as AuthenticatedSettingsAccountRouteImport } from './routes/_authenticated/settings/account'
-import { Route as AuthenticatedProductsProductIdRouteImport } from './routes/_authenticated/products/$productId'
-import { Route as AuthenticatedPaymentsPaymentIdRouteImport } from './routes/_authenticated/payments/$paymentId'
+import { Route as AuthenticatedReservationsReservationIdRouteImport } from './routes/_authenticated/reservations/$reservationId'
 import { Route as AuthenticatedCustomersCustomerIdRouteImport } from './routes/_authenticated/customers/$customerId'
-import { Route as AuthenticatedSettingsAppsIndexRouteImport } from './routes/_authenticated/settings/apps/index'
+import { Route as AuthenticatedCallsCallIdRouteImport } from './routes/_authenticated/calls/$callId'
+import { Route as AuthenticatedSettingsRestaurantsIndexRouteImport } from './routes/_authenticated/settings/restaurants/index'
 import { Route as AuthenticatedSettingsAdminsIndexRouteImport } from './routes/_authenticated/settings/admins/index'
-import { Route as AuthenticatedSettingsAppsAppIdRouteImport } from './routes/_authenticated/settings/apps/$appId'
+import { Route as AuthenticatedSettingsRestaurantsRestaurantIdRouteImport } from './routes/_authenticated/settings/restaurants/$restaurantId'
 import { Route as AuthenticatedSettingsAdminsAdminIdRouteImport } from './routes/_authenticated/settings/admins/$adminId'
 
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
@@ -123,16 +123,10 @@ const AuthenticatedSettingsIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedSettingsRouteRoute,
   } as any)
-const AuthenticatedProductsIndexRoute =
-  AuthenticatedProductsIndexRouteImport.update({
-    id: '/products/',
-    path: '/products/',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedPaymentsIndexRoute =
-  AuthenticatedPaymentsIndexRouteImport.update({
-    id: '/payments/',
-    path: '/payments/',
+const AuthenticatedReservationsIndexRoute =
+  AuthenticatedReservationsIndexRouteImport.update({
+    id: '/reservations/',
+    path: '/reservations/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedHelpCenterIndexRoute =
@@ -150,6 +144,11 @@ const AuthenticatedCustomersIndexRoute =
 const AuthenticatedChatsIndexRoute = AuthenticatedChatsIndexRouteImport.update({
   id: '/chats/',
   path: '/chats/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedCallsIndexRoute = AuthenticatedCallsIndexRouteImport.update({
+  id: '/calls/',
+  path: '/calls/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedSettingsNotificationsRoute =
@@ -176,16 +175,10 @@ const AuthenticatedSettingsAccountRoute =
     path: '/account',
     getParentRoute: () => AuthenticatedSettingsRouteRoute,
   } as any)
-const AuthenticatedProductsProductIdRoute =
-  AuthenticatedProductsProductIdRouteImport.update({
-    id: '/products/$productId',
-    path: '/products/$productId',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedPaymentsPaymentIdRoute =
-  AuthenticatedPaymentsPaymentIdRouteImport.update({
-    id: '/payments/$paymentId',
-    path: '/payments/$paymentId',
+const AuthenticatedReservationsReservationIdRoute =
+  AuthenticatedReservationsReservationIdRouteImport.update({
+    id: '/reservations/$reservationId',
+    path: '/reservations/$reservationId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedCustomersCustomerIdRoute =
@@ -194,10 +187,16 @@ const AuthenticatedCustomersCustomerIdRoute =
     path: '/customers/$customerId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedSettingsAppsIndexRoute =
-  AuthenticatedSettingsAppsIndexRouteImport.update({
-    id: '/apps/',
-    path: '/apps/',
+const AuthenticatedCallsCallIdRoute =
+  AuthenticatedCallsCallIdRouteImport.update({
+    id: '/calls/$callId',
+    path: '/calls/$callId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedSettingsRestaurantsIndexRoute =
+  AuthenticatedSettingsRestaurantsIndexRouteImport.update({
+    id: '/restaurants/',
+    path: '/restaurants/',
     getParentRoute: () => AuthenticatedSettingsRouteRoute,
   } as any)
 const AuthenticatedSettingsAdminsIndexRoute =
@@ -206,10 +205,10 @@ const AuthenticatedSettingsAdminsIndexRoute =
     path: '/admins/',
     getParentRoute: () => AuthenticatedSettingsRouteRoute,
   } as any)
-const AuthenticatedSettingsAppsAppIdRoute =
-  AuthenticatedSettingsAppsAppIdRouteImport.update({
-    id: '/apps/$appId',
-    path: '/apps/$appId',
+const AuthenticatedSettingsRestaurantsRestaurantIdRoute =
+  AuthenticatedSettingsRestaurantsRestaurantIdRouteImport.update({
+    id: '/restaurants/$restaurantId',
+    path: '/restaurants/$restaurantId',
     getParentRoute: () => AuthenticatedSettingsRouteRoute,
   } as any)
 const AuthenticatedSettingsAdminsAdminIdRoute =
@@ -233,24 +232,24 @@ export interface FileRoutesByFullPath {
   '/503': typeof errors503Route
   '/payment-success': typeof errorsPaymentSuccessRoute
   '/': typeof AuthenticatedIndexRoute
+  '/calls/$callId': typeof AuthenticatedCallsCallIdRoute
   '/customers/$customerId': typeof AuthenticatedCustomersCustomerIdRoute
-  '/payments/$paymentId': typeof AuthenticatedPaymentsPaymentIdRoute
-  '/products/$productId': typeof AuthenticatedProductsProductIdRoute
+  '/reservations/$reservationId': typeof AuthenticatedReservationsReservationIdRoute
   '/settings/account': typeof AuthenticatedSettingsAccountRoute
   '/settings/appearance': typeof AuthenticatedSettingsAppearanceRoute
   '/settings/display': typeof AuthenticatedSettingsDisplayRoute
   '/settings/notifications': typeof AuthenticatedSettingsNotificationsRoute
+  '/calls': typeof AuthenticatedCallsIndexRoute
   '/chats': typeof AuthenticatedChatsIndexRoute
   '/customers': typeof AuthenticatedCustomersIndexRoute
   '/help-center': typeof AuthenticatedHelpCenterIndexRoute
-  '/payments': typeof AuthenticatedPaymentsIndexRoute
-  '/products': typeof AuthenticatedProductsIndexRoute
+  '/reservations': typeof AuthenticatedReservationsIndexRoute
   '/settings/': typeof AuthenticatedSettingsIndexRoute
   '/users': typeof AuthenticatedUsersIndexRoute
   '/settings/admins/$adminId': typeof AuthenticatedSettingsAdminsAdminIdRoute
-  '/settings/apps/$appId': typeof AuthenticatedSettingsAppsAppIdRoute
+  '/settings/restaurants/$restaurantId': typeof AuthenticatedSettingsRestaurantsRestaurantIdRoute
   '/settings/admins': typeof AuthenticatedSettingsAdminsIndexRoute
-  '/settings/apps': typeof AuthenticatedSettingsAppsIndexRoute
+  '/settings/restaurants': typeof AuthenticatedSettingsRestaurantsIndexRoute
 }
 export interface FileRoutesByTo {
   '/forgot-password': typeof authForgotPasswordRoute
@@ -265,24 +264,24 @@ export interface FileRoutesByTo {
   '/503': typeof errors503Route
   '/payment-success': typeof errorsPaymentSuccessRoute
   '/': typeof AuthenticatedIndexRoute
+  '/calls/$callId': typeof AuthenticatedCallsCallIdRoute
   '/customers/$customerId': typeof AuthenticatedCustomersCustomerIdRoute
-  '/payments/$paymentId': typeof AuthenticatedPaymentsPaymentIdRoute
-  '/products/$productId': typeof AuthenticatedProductsProductIdRoute
+  '/reservations/$reservationId': typeof AuthenticatedReservationsReservationIdRoute
   '/settings/account': typeof AuthenticatedSettingsAccountRoute
   '/settings/appearance': typeof AuthenticatedSettingsAppearanceRoute
   '/settings/display': typeof AuthenticatedSettingsDisplayRoute
   '/settings/notifications': typeof AuthenticatedSettingsNotificationsRoute
+  '/calls': typeof AuthenticatedCallsIndexRoute
   '/chats': typeof AuthenticatedChatsIndexRoute
   '/customers': typeof AuthenticatedCustomersIndexRoute
   '/help-center': typeof AuthenticatedHelpCenterIndexRoute
-  '/payments': typeof AuthenticatedPaymentsIndexRoute
-  '/products': typeof AuthenticatedProductsIndexRoute
+  '/reservations': typeof AuthenticatedReservationsIndexRoute
   '/settings': typeof AuthenticatedSettingsIndexRoute
   '/users': typeof AuthenticatedUsersIndexRoute
   '/settings/admins/$adminId': typeof AuthenticatedSettingsAdminsAdminIdRoute
-  '/settings/apps/$appId': typeof AuthenticatedSettingsAppsAppIdRoute
+  '/settings/restaurants/$restaurantId': typeof AuthenticatedSettingsRestaurantsRestaurantIdRoute
   '/settings/admins': typeof AuthenticatedSettingsAdminsIndexRoute
-  '/settings/apps': typeof AuthenticatedSettingsAppsIndexRoute
+  '/settings/restaurants': typeof AuthenticatedSettingsRestaurantsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -300,24 +299,24 @@ export interface FileRoutesById {
   '/(errors)/503': typeof errors503Route
   '/(errors)/payment-success': typeof errorsPaymentSuccessRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/calls/$callId': typeof AuthenticatedCallsCallIdRoute
   '/_authenticated/customers/$customerId': typeof AuthenticatedCustomersCustomerIdRoute
-  '/_authenticated/payments/$paymentId': typeof AuthenticatedPaymentsPaymentIdRoute
-  '/_authenticated/products/$productId': typeof AuthenticatedProductsProductIdRoute
+  '/_authenticated/reservations/$reservationId': typeof AuthenticatedReservationsReservationIdRoute
   '/_authenticated/settings/account': typeof AuthenticatedSettingsAccountRoute
   '/_authenticated/settings/appearance': typeof AuthenticatedSettingsAppearanceRoute
   '/_authenticated/settings/display': typeof AuthenticatedSettingsDisplayRoute
   '/_authenticated/settings/notifications': typeof AuthenticatedSettingsNotificationsRoute
+  '/_authenticated/calls/': typeof AuthenticatedCallsIndexRoute
   '/_authenticated/chats/': typeof AuthenticatedChatsIndexRoute
   '/_authenticated/customers/': typeof AuthenticatedCustomersIndexRoute
   '/_authenticated/help-center/': typeof AuthenticatedHelpCenterIndexRoute
-  '/_authenticated/payments/': typeof AuthenticatedPaymentsIndexRoute
-  '/_authenticated/products/': typeof AuthenticatedProductsIndexRoute
+  '/_authenticated/reservations/': typeof AuthenticatedReservationsIndexRoute
   '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
   '/_authenticated/users/': typeof AuthenticatedUsersIndexRoute
   '/_authenticated/settings/admins/$adminId': typeof AuthenticatedSettingsAdminsAdminIdRoute
-  '/_authenticated/settings/apps/$appId': typeof AuthenticatedSettingsAppsAppIdRoute
+  '/_authenticated/settings/restaurants/$restaurantId': typeof AuthenticatedSettingsRestaurantsRestaurantIdRoute
   '/_authenticated/settings/admins/': typeof AuthenticatedSettingsAdminsIndexRoute
-  '/_authenticated/settings/apps/': typeof AuthenticatedSettingsAppsIndexRoute
+  '/_authenticated/settings/restaurants/': typeof AuthenticatedSettingsRestaurantsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -335,24 +334,24 @@ export interface FileRouteTypes {
     | '/503'
     | '/payment-success'
     | '/'
+    | '/calls/$callId'
     | '/customers/$customerId'
-    | '/payments/$paymentId'
-    | '/products/$productId'
+    | '/reservations/$reservationId'
     | '/settings/account'
     | '/settings/appearance'
     | '/settings/display'
     | '/settings/notifications'
+    | '/calls'
     | '/chats'
     | '/customers'
     | '/help-center'
-    | '/payments'
-    | '/products'
+    | '/reservations'
     | '/settings/'
     | '/users'
     | '/settings/admins/$adminId'
-    | '/settings/apps/$appId'
+    | '/settings/restaurants/$restaurantId'
     | '/settings/admins'
-    | '/settings/apps'
+    | '/settings/restaurants'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/forgot-password'
@@ -367,24 +366,24 @@ export interface FileRouteTypes {
     | '/503'
     | '/payment-success'
     | '/'
+    | '/calls/$callId'
     | '/customers/$customerId'
-    | '/payments/$paymentId'
-    | '/products/$productId'
+    | '/reservations/$reservationId'
     | '/settings/account'
     | '/settings/appearance'
     | '/settings/display'
     | '/settings/notifications'
+    | '/calls'
     | '/chats'
     | '/customers'
     | '/help-center'
-    | '/payments'
-    | '/products'
+    | '/reservations'
     | '/settings'
     | '/users'
     | '/settings/admins/$adminId'
-    | '/settings/apps/$appId'
+    | '/settings/restaurants/$restaurantId'
     | '/settings/admins'
-    | '/settings/apps'
+    | '/settings/restaurants'
   id:
     | '__root__'
     | '/_authenticated'
@@ -401,24 +400,24 @@ export interface FileRouteTypes {
     | '/(errors)/503'
     | '/(errors)/payment-success'
     | '/_authenticated/'
+    | '/_authenticated/calls/$callId'
     | '/_authenticated/customers/$customerId'
-    | '/_authenticated/payments/$paymentId'
-    | '/_authenticated/products/$productId'
+    | '/_authenticated/reservations/$reservationId'
     | '/_authenticated/settings/account'
     | '/_authenticated/settings/appearance'
     | '/_authenticated/settings/display'
     | '/_authenticated/settings/notifications'
+    | '/_authenticated/calls/'
     | '/_authenticated/chats/'
     | '/_authenticated/customers/'
     | '/_authenticated/help-center/'
-    | '/_authenticated/payments/'
-    | '/_authenticated/products/'
+    | '/_authenticated/reservations/'
     | '/_authenticated/settings/'
     | '/_authenticated/users/'
     | '/_authenticated/settings/admins/$adminId'
-    | '/_authenticated/settings/apps/$appId'
+    | '/_authenticated/settings/restaurants/$restaurantId'
     | '/_authenticated/settings/admins/'
-    | '/_authenticated/settings/apps/'
+    | '/_authenticated/settings/restaurants/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -550,18 +549,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsIndexRouteImport
       parentRoute: typeof AuthenticatedSettingsRouteRoute
     }
-    '/_authenticated/products/': {
-      id: '/_authenticated/products/'
-      path: '/products'
-      fullPath: '/products'
-      preLoaderRoute: typeof AuthenticatedProductsIndexRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/payments/': {
-      id: '/_authenticated/payments/'
-      path: '/payments'
-      fullPath: '/payments'
-      preLoaderRoute: typeof AuthenticatedPaymentsIndexRouteImport
+    '/_authenticated/reservations/': {
+      id: '/_authenticated/reservations/'
+      path: '/reservations'
+      fullPath: '/reservations'
+      preLoaderRoute: typeof AuthenticatedReservationsIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/help-center/': {
@@ -583,6 +575,13 @@ declare module '@tanstack/react-router' {
       path: '/chats'
       fullPath: '/chats'
       preLoaderRoute: typeof AuthenticatedChatsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/calls/': {
+      id: '/_authenticated/calls/'
+      path: '/calls'
+      fullPath: '/calls'
+      preLoaderRoute: typeof AuthenticatedCallsIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/settings/notifications': {
@@ -613,18 +612,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsAccountRouteImport
       parentRoute: typeof AuthenticatedSettingsRouteRoute
     }
-    '/_authenticated/products/$productId': {
-      id: '/_authenticated/products/$productId'
-      path: '/products/$productId'
-      fullPath: '/products/$productId'
-      preLoaderRoute: typeof AuthenticatedProductsProductIdRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/payments/$paymentId': {
-      id: '/_authenticated/payments/$paymentId'
-      path: '/payments/$paymentId'
-      fullPath: '/payments/$paymentId'
-      preLoaderRoute: typeof AuthenticatedPaymentsPaymentIdRouteImport
+    '/_authenticated/reservations/$reservationId': {
+      id: '/_authenticated/reservations/$reservationId'
+      path: '/reservations/$reservationId'
+      fullPath: '/reservations/$reservationId'
+      preLoaderRoute: typeof AuthenticatedReservationsReservationIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/customers/$customerId': {
@@ -634,11 +626,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCustomersCustomerIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/settings/apps/': {
-      id: '/_authenticated/settings/apps/'
-      path: '/apps'
-      fullPath: '/settings/apps'
-      preLoaderRoute: typeof AuthenticatedSettingsAppsIndexRouteImport
+    '/_authenticated/calls/$callId': {
+      id: '/_authenticated/calls/$callId'
+      path: '/calls/$callId'
+      fullPath: '/calls/$callId'
+      preLoaderRoute: typeof AuthenticatedCallsCallIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/settings/restaurants/': {
+      id: '/_authenticated/settings/restaurants/'
+      path: '/restaurants'
+      fullPath: '/settings/restaurants'
+      preLoaderRoute: typeof AuthenticatedSettingsRestaurantsIndexRouteImport
       parentRoute: typeof AuthenticatedSettingsRouteRoute
     }
     '/_authenticated/settings/admins/': {
@@ -648,11 +647,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsAdminsIndexRouteImport
       parentRoute: typeof AuthenticatedSettingsRouteRoute
     }
-    '/_authenticated/settings/apps/$appId': {
-      id: '/_authenticated/settings/apps/$appId'
-      path: '/apps/$appId'
-      fullPath: '/settings/apps/$appId'
-      preLoaderRoute: typeof AuthenticatedSettingsAppsAppIdRouteImport
+    '/_authenticated/settings/restaurants/$restaurantId': {
+      id: '/_authenticated/settings/restaurants/$restaurantId'
+      path: '/restaurants/$restaurantId'
+      fullPath: '/settings/restaurants/$restaurantId'
+      preLoaderRoute: typeof AuthenticatedSettingsRestaurantsRestaurantIdRouteImport
       parentRoute: typeof AuthenticatedSettingsRouteRoute
     }
     '/_authenticated/settings/admins/$adminId': {
@@ -672,9 +671,9 @@ interface AuthenticatedSettingsRouteRouteChildren {
   AuthenticatedSettingsNotificationsRoute: typeof AuthenticatedSettingsNotificationsRoute
   AuthenticatedSettingsIndexRoute: typeof AuthenticatedSettingsIndexRoute
   AuthenticatedSettingsAdminsAdminIdRoute: typeof AuthenticatedSettingsAdminsAdminIdRoute
-  AuthenticatedSettingsAppsAppIdRoute: typeof AuthenticatedSettingsAppsAppIdRoute
+  AuthenticatedSettingsRestaurantsRestaurantIdRoute: typeof AuthenticatedSettingsRestaurantsRestaurantIdRoute
   AuthenticatedSettingsAdminsIndexRoute: typeof AuthenticatedSettingsAdminsIndexRoute
-  AuthenticatedSettingsAppsIndexRoute: typeof AuthenticatedSettingsAppsIndexRoute
+  AuthenticatedSettingsRestaurantsIndexRoute: typeof AuthenticatedSettingsRestaurantsIndexRoute
 }
 
 const AuthenticatedSettingsRouteRouteChildren: AuthenticatedSettingsRouteRouteChildren =
@@ -687,10 +686,12 @@ const AuthenticatedSettingsRouteRouteChildren: AuthenticatedSettingsRouteRouteCh
     AuthenticatedSettingsIndexRoute: AuthenticatedSettingsIndexRoute,
     AuthenticatedSettingsAdminsAdminIdRoute:
       AuthenticatedSettingsAdminsAdminIdRoute,
-    AuthenticatedSettingsAppsAppIdRoute: AuthenticatedSettingsAppsAppIdRoute,
+    AuthenticatedSettingsRestaurantsRestaurantIdRoute:
+      AuthenticatedSettingsRestaurantsRestaurantIdRoute,
     AuthenticatedSettingsAdminsIndexRoute:
       AuthenticatedSettingsAdminsIndexRoute,
-    AuthenticatedSettingsAppsIndexRoute: AuthenticatedSettingsAppsIndexRoute,
+    AuthenticatedSettingsRestaurantsIndexRoute:
+      AuthenticatedSettingsRestaurantsIndexRoute,
   }
 
 const AuthenticatedSettingsRouteRouteWithChildren =
@@ -701,28 +702,29 @@ const AuthenticatedSettingsRouteRouteWithChildren =
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedSettingsRouteRoute: typeof AuthenticatedSettingsRouteRouteWithChildren
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedCallsCallIdRoute: typeof AuthenticatedCallsCallIdRoute
   AuthenticatedCustomersCustomerIdRoute: typeof AuthenticatedCustomersCustomerIdRoute
-  AuthenticatedPaymentsPaymentIdRoute: typeof AuthenticatedPaymentsPaymentIdRoute
-  AuthenticatedProductsProductIdRoute: typeof AuthenticatedProductsProductIdRoute
+  AuthenticatedReservationsReservationIdRoute: typeof AuthenticatedReservationsReservationIdRoute
+  AuthenticatedCallsIndexRoute: typeof AuthenticatedCallsIndexRoute
   AuthenticatedChatsIndexRoute: typeof AuthenticatedChatsIndexRoute
   AuthenticatedCustomersIndexRoute: typeof AuthenticatedCustomersIndexRoute
   AuthenticatedHelpCenterIndexRoute: typeof AuthenticatedHelpCenterIndexRoute
-  AuthenticatedPaymentsIndexRoute: typeof AuthenticatedPaymentsIndexRoute
-  AuthenticatedProductsIndexRoute: typeof AuthenticatedProductsIndexRoute
+  AuthenticatedReservationsIndexRoute: typeof AuthenticatedReservationsIndexRoute
   AuthenticatedUsersIndexRoute: typeof AuthenticatedUsersIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSettingsRouteRoute: AuthenticatedSettingsRouteRouteWithChildren,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedCallsCallIdRoute: AuthenticatedCallsCallIdRoute,
   AuthenticatedCustomersCustomerIdRoute: AuthenticatedCustomersCustomerIdRoute,
-  AuthenticatedPaymentsPaymentIdRoute: AuthenticatedPaymentsPaymentIdRoute,
-  AuthenticatedProductsProductIdRoute: AuthenticatedProductsProductIdRoute,
+  AuthenticatedReservationsReservationIdRoute:
+    AuthenticatedReservationsReservationIdRoute,
+  AuthenticatedCallsIndexRoute: AuthenticatedCallsIndexRoute,
   AuthenticatedChatsIndexRoute: AuthenticatedChatsIndexRoute,
   AuthenticatedCustomersIndexRoute: AuthenticatedCustomersIndexRoute,
   AuthenticatedHelpCenterIndexRoute: AuthenticatedHelpCenterIndexRoute,
-  AuthenticatedPaymentsIndexRoute: AuthenticatedPaymentsIndexRoute,
-  AuthenticatedProductsIndexRoute: AuthenticatedProductsIndexRoute,
+  AuthenticatedReservationsIndexRoute: AuthenticatedReservationsIndexRoute,
   AuthenticatedUsersIndexRoute: AuthenticatedUsersIndexRoute,
 }
 

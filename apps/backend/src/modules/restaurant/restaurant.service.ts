@@ -1,7 +1,9 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
-import { DatabaseService, Restaurant } from "@repo/database";
+import { DatabaseService, Restaurant, RestaurantAuthentication } from "@repo/database";
+import { CryptoUtils } from "@repo/utils";
 import { ZenchefService } from "../zenchef/zenchef.service";
 import { RestaurantNotFoundError } from "../../errors/restaurant-not-found.error";
+import { BCRYPT_SALT_ROUNDS } from "../../constants/user.constants";
 
 @Injectable()
 export class RestaurantService {
@@ -173,5 +175,93 @@ export class RestaurantService {
         this.logger.log(
             `Seating areas sync completed for restaurant: ${restaurantId}`
         );
+    }
+
+    /**
+     * Create a new authentication for a restaurant
+     * Returns the plain secret only once - it's never stored in plain text
+     */
+    public async createAuthentication(
+        restaurantId: string
+    ): Promise<{ id: string; clientId: string; clientSecret: string }> {
+        this.logger.log(`Creating authentication for restaurant: ${restaurantId}`);
+
+        const restaurant = await this.findRestaurantById(restaurantId);
+        if (!restaurant) {
+            throw new RestaurantNotFoundError(restaurantId);
+        }
+
+        // Generate a unique client ID and secret
+        const clientId = CryptoUtils.generateSecureToken(32);
+        const clientSecret = CryptoUtils.generateSecureToken(48);
+
+        // Hash the secret before storing
+        const hashedSecret = CryptoUtils.encryptPassword(
+            clientSecret,
+            BCRYPT_SALT_ROUNDS
+        );
+
+        const auth = await this.databaseService.restaurantAuthentication.create({
+            data: {
+                clientId,
+                clientSecret: hashedSecret,
+                restaurantId,
+                isActive: true,
+            },
+        });
+
+        // Return the plain secret - this is the only time it will be available
+        return {
+            id: auth.id,
+            clientId: auth.clientId,
+            clientSecret, // Plain secret, not hashed
+        };
+    }
+
+    /**
+     * Get all authentications for a restaurant (without secrets)
+     */
+    public async getAuthentications(
+        restaurantId: string
+    ): Promise<RestaurantAuthentication[]> {
+        return this.databaseService.restaurantAuthentication.findMany({
+            where: { restaurantId },
+        });
+    }
+
+    /**
+     * Delete an authentication
+     */
+    public async deleteAuthentication(
+        restaurantId: string,
+        authId: string
+    ): Promise<void> {
+        await this.databaseService.restaurantAuthentication.delete({
+            where: { id: authId, restaurantId },
+        });
+    }
+
+    /**
+     * Verify client credentials and return the restaurant if valid
+     */
+    public async verifyClientCredentials(
+        clientId: string,
+        clientSecret: string
+    ): Promise<Restaurant | null> {
+        const auth =
+            await this.databaseService.restaurantAuthentication.findUnique({
+                where: { clientId },
+                include: { restaurant: true },
+            });
+
+        if (!auth || !auth.isActive) return null;
+
+        const isValid = CryptoUtils.comparePassword(
+            clientSecret,
+            auth.clientSecret
+        );
+        if (!isValid) return null;
+
+        return auth.restaurant;
     }
 }

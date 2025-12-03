@@ -7,12 +7,14 @@ import {
     Param,
     Post,
     Put,
+    Query,
     Req,
 } from "@nestjs/common";
 import {
     ApiCreatedResponse,
     ApiOkResponse,
     ApiOperation,
+    ApiQuery,
     ApiTags,
 } from "@nestjs/swagger";
 import {
@@ -26,9 +28,12 @@ import {
     SearchReservationsRequestModel,
     UpdateReservationRequestModel,
     UpdateReservationByIdRequestModel,
+    AdminReservationListResponseModel,
+    AdminReservationModel,
 } from "@repo/contracts";
+import { ReservationStatus } from "@repo/database";
 import { ReservationsService } from "./reservations.service";
-import { OnlyApp } from "../../decorators/user-api.decorator";
+import { OnlyAdmin, OnlyApp } from "../../decorators/user-api.decorator";
 import { AuthenticatedRequest } from "../../types/request";
 import { CustomerService } from "../customer/customer.service";
 
@@ -273,5 +278,61 @@ export class ReservationsController {
             restaurantId,
             body.bookingId
         );
+    }
+
+    // ==================== Admin UI Endpoints ====================
+
+    /**
+     * Get all reservations from local database (Admin UI)
+     */
+    @OnlyAdmin()
+    @Get("admin/list")
+    @ApiOperation({ summary: "Get all reservations from local database (Admin UI)" })
+    @ApiOkResponse({ type: AdminReservationListResponseModel })
+    @ApiQuery({ name: "restaurantId", required: false })
+    @ApiQuery({ name: "date", required: false })
+    @ApiQuery({ name: "status", required: false, description: "Comma-separated statuses" })
+    @ApiQuery({ name: "skip", required: false, type: Number })
+    @ApiQuery({ name: "take", required: false, type: Number })
+    async getAdminReservations(
+        @Query("restaurantId") restaurantId?: string,
+        @Query("date") date?: string,
+        @Query("status") status?: string,
+        @Query("skip") skip?: string,
+        @Query("take") take?: string
+    ): Promise<AdminReservationListResponseModel> {
+        const statusList = status
+            ? (status.split(",") as ReservationStatus[])
+            : undefined;
+
+        const result = await this.reservationsService.getReservationsFromDb(
+            restaurantId,
+            date,
+            statusList,
+            skip ? parseInt(skip, 10) : 0,
+            take ? parseInt(take, 10) : 50
+        );
+
+        return new AdminReservationListResponseModel(
+            result.items.map((r) => new AdminReservationModel(r)),
+            result.total
+        );
+    }
+
+    /**
+     * Get a single reservation from local database by ID (Admin UI)
+     */
+    @OnlyAdmin()
+    @Get("admin/:id")
+    @ApiOperation({ summary: "Get reservation by ID from local database (Admin UI)" })
+    @ApiOkResponse({ type: AdminReservationModel })
+    async getAdminReservationById(
+        @Param("id") id: string
+    ): Promise<AdminReservationModel> {
+        const reservation = await this.reservationsService.getReservationFromDbById(id);
+        if (!reservation) {
+            throw new Error("Reservation not found");
+        }
+        return new AdminReservationModel(reservation);
     }
 }

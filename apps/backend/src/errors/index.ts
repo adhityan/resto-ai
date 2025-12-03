@@ -13,3 +13,4 @@ export * from "./payment-not-found.error";
 export * from "./security.error";
 export * from "./mixed-product-types.error";
 export * from "./general.error";
+export * from "./call-not-found.error";

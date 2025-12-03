@@ -1,6 +1,7 @@
 import {
     Body,
     Controller,
+    Delete,
     Get,
     Inject,
     Param,
@@ -12,6 +13,8 @@ import {
     RestaurantModel,
     CreateRestaurantModel,
     UpdateRestaurantModel,
+    RestaurantAuthenticationModel,
+    CreateRestaurantAuthenticationResponseModel,
 } from "@repo/contracts";
 
 import { RestaurantService } from "./restaurant.service";
@@ -57,7 +60,7 @@ export class RestaurantController {
     ): Promise<RestaurantModel> {
         const restaurant = await this.restaurantService.createRestaurant(
             body.name,
-            body.basePath,
+            body.incomingPhoneNumber,
             body.zenchefId,
             body.apiToken
         );
@@ -90,5 +93,44 @@ export class RestaurantController {
     ): Promise<{ message: string }> {
         await this.restaurantService.syncSeatingAreas(id);
         return { message: "Seating areas synced successfully" };
+    }
+
+    @OnlyAdmin()
+    @Get(":id/authentications")
+    @ApiOkResponse({
+        type: [RestaurantAuthenticationModel],
+    })
+    public async getAuthentications(
+        @Param("id") id: string
+    ): Promise<RestaurantAuthenticationModel[]> {
+        const auths = await this.restaurantService.getAuthentications(id);
+        return auths.map((auth) => new RestaurantAuthenticationModel(auth));
+    }
+
+    @OnlyAdmin()
+    @Post(":id/authentications")
+    @ApiCreatedResponse({
+        type: CreateRestaurantAuthenticationResponseModel,
+        description:
+            "Returns the client credentials. The secret is only shown once.",
+    })
+    public async createAuthentication(
+        @Param("id") id: string
+    ): Promise<CreateRestaurantAuthenticationResponseModel> {
+        const result = await this.restaurantService.createAuthentication(id);
+        return new CreateRestaurantAuthenticationResponseModel(result);
+    }
+
+    @OnlyAdmin()
+    @Delete(":id/authentications/:authId")
+    @ApiOkResponse({
+        description: "Authentication deleted successfully",
+    })
+    public async deleteAuthentication(
+        @Param("id") id: string,
+        @Param("authId") authId: string
+    ): Promise<{ message: string }> {
+        await this.restaurantService.deleteAuthentication(id, authId);
+        return { message: "Authentication deleted successfully" };
     }
 }

@@ -14,7 +14,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                     <span className="bg-primary text-primary-foreground flex size-8 items-center justify-center rounded-lg">
                         <Command size={18} />
                     </span>
-                    {!isCollapsed && <span className="text-lg font-semibold">Payments Admin</span>}
+                    {!isCollapsed && <span className="text-lg font-semibold">Restaurant Admin</span>}
                 </div>
             </SidebarHeader>
             <SidebarContent>

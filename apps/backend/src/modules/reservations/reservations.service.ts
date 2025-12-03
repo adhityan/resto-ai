@@ -5,6 +5,11 @@ import {
     CancelReservationResponseModel,
     ReservationListResponseModel,
 } from "@repo/contracts";
+import {
+    DatabaseService,
+    Reservation,
+    ReservationStatus,
+} from "@repo/database";
 import { CacheUtil, normalizePhoneNumber } from "@repo/utils";
 import { ZenchefService } from "../zenchef/zenchef.service";
 import { RestaurantService } from "../restaurant/restaurant.service";
@@ -21,10 +26,88 @@ export class ReservationsService {
 
     constructor(
         private readonly zenchefService: ZenchefService,
-        private readonly restaurantService: RestaurantService
+        private readonly restaurantService: RestaurantService,
+        private readonly databaseService: DatabaseService
     ) {
         // Initialize cache with 24 hour TTL
         this.bookingIdCache = new CacheUtil<Set<string>>(86400);
+    }
+
+    /**
+     * Maps Zenchef status string to ReservationStatus enum
+     */
+    private mapStatusToEnum(status: string): ReservationStatus {
+        const statusMap: Record<string, ReservationStatus> = {
+            waiting: ReservationStatus.WAITING,
+            waiting_customer: ReservationStatus.WAITING_CUSTOMER,
+            confirmed: ReservationStatus.CONFIRMED,
+            canceled: ReservationStatus.CANCELED,
+            refused: ReservationStatus.REFUSED,
+            arrived: ReservationStatus.ARRIVED,
+            seated: ReservationStatus.SEATED,
+            over: ReservationStatus.OVER,
+            no_shown: ReservationStatus.NO_SHOWN,
+        };
+        return statusMap[status] || ReservationStatus.WAITING;
+    }
+
+    /**
+     * Saves or updates a reservation in the local database
+     */
+    private async syncReservationToDb(
+        restaurantId: string,
+        bookingId: string,
+        data: {
+            status?: string;
+            date: string;
+            time: string;
+            numberOfGuests: number;
+            customerName: string;
+            customerPhone?: string;
+            customerEmail?: string;
+            comments?: string;
+            allergies?: string;
+            seatingAreaName?: string;
+        }
+    ): Promise<Reservation> {
+        return this.databaseService.reservation.upsert({
+            where: {
+                restaurantId_zenchefBookingId: {
+                    restaurantId,
+                    zenchefBookingId: bookingId,
+                },
+            },
+            update: {
+                status: data.status
+                    ? this.mapStatusToEnum(data.status)
+                    : undefined,
+                date: data.date,
+                time: data.time,
+                numberOfGuests: data.numberOfGuests,
+                customerName: data.customerName,
+                customerPhone: data.customerPhone,
+                customerEmail: data.customerEmail,
+                comments: data.comments,
+                allergies: data.allergies,
+                seatingAreaName: data.seatingAreaName,
+            },
+            create: {
+                restaurantId,
+                zenchefBookingId: bookingId,
+                status: data.status
+                    ? this.mapStatusToEnum(data.status)
+                    : ReservationStatus.WAITING,
+                date: data.date,
+                time: data.time,
+                numberOfGuests: data.numberOfGuests,
+                customerName: data.customerName,
+                customerPhone: data.customerPhone,
+                customerEmail: data.customerEmail,
+                comments: data.comments,
+                allergies: data.allergies,
+                seatingAreaName: data.seatingAreaName,
+            },
+        });
     }
 
     /**
@@ -452,7 +535,23 @@ export class ReservationsService {
             allergies
         );
 
-        console.log("createReservation", booking);
+        // Sync to local database
+        await this.syncReservationToDb(restaurantId, booking.bookingId, {
+            status: booking.status,
+            date: booking.date,
+            time: booking.time,
+            numberOfGuests: booking.numberOfCustomers,
+            customerName: booking.name,
+            customerPhone: booking.phone,
+            customerEmail: booking.email,
+            comments: booking.comments,
+            allergies: allergies,
+            seatingAreaName: booking.seatingAreaName,
+        });
+
+        this.logger.log(
+            `Created and synced reservation ${booking.bookingId} to local database`
+        );
 
         // Generate human-readable description
         let description = `Successfully created a new reservation. `;
@@ -565,7 +664,23 @@ export class ReservationsService {
             allergies || undefined
         );
 
-        console.log("updateReservation", booking);
+        // Sync to local database
+        await this.syncReservationToDb(restaurantId, booking.bookingId, {
+            status: booking.status,
+            date: booking.date,
+            time: booking.time,
+            numberOfGuests: booking.numberOfCustomers,
+            customerName: booking.name,
+            customerPhone: booking.phone,
+            customerEmail: booking.email,
+            comments: booking.comments,
+            allergies: allergies || undefined,
+            seatingAreaName: booking.seatingAreaName,
+        });
+
+        this.logger.log(
+            `Updated and synced reservation ${booking.bookingId} to local database`
+        );
 
         // Generate human-readable description
         let description = `Successfully updated the reservation. `;
@@ -695,11 +810,95 @@ export class ReservationsService {
             bookingId
         );
 
+        // Update status in local database
+        await this.databaseService.reservation.updateMany({
+            where: {
+                restaurantId,
+                zenchefBookingId: bookingId,
+            },
+            data: {
+                status: ReservationStatus.CANCELED,
+            },
+        });
+
+        this.logger.log(
+            `Cancelled and synced reservation ${bookingId} to local database`
+        );
+
         // Generate human-readable description
         const description = `Successfully cancelled the reservation with Booking ID: ${bookingId}. The reservation has been removed from the system.`;
 
         return new CancelReservationResponseModel({
             description,
+        });
+    }
+
+    /**
+     * Get all reservations from local database (for Admin UI)
+     */
+    async getReservationsFromDb(
+        restaurantId?: string,
+        date?: string,
+        status?: ReservationStatus[],
+        skip = 0,
+        take = 50
+    ): Promise<{ items: Reservation[]; total: number }> {
+        const where: any = {};
+
+        if (restaurantId) {
+            where.restaurantId = restaurantId;
+        }
+
+        if (date) {
+            where.date = date;
+        }
+
+        if (status && status.length > 0) {
+            where.status = { in: status };
+        }
+
+        const [items, total] = await Promise.all([
+            this.databaseService.reservation.findMany({
+                where,
+                include: { restaurant: true },
+                orderBy: [{ date: "desc" }, { time: "desc" }],
+                skip,
+                take,
+            }),
+            this.databaseService.reservation.count({ where }),
+        ]);
+
+        return { items, total };
+    }
+
+    /**
+     * Get a single reservation from local database by ID (for Admin UI)
+     */
+    async getReservationFromDbById(
+        id: string
+    ): Promise<
+        (Reservation & { restaurant: { id: string; name: string } }) | null
+    > {
+        return this.databaseService.reservation.findUnique({
+            where: { id },
+            include: { restaurant: { select: { id: true, name: true } } },
+        });
+    }
+
+    /**
+     * Get a single reservation from local database by Zenchef booking ID
+     */
+    async getReservationFromDbByBookingId(
+        restaurantId: string,
+        zenchefBookingId: string
+    ): Promise<Reservation | null> {
+        return this.databaseService.reservation.findUnique({
+            where: {
+                restaurantId_zenchefBookingId: {
+                    restaurantId,
+                    zenchefBookingId,
+                },
+            },
         });
     }
 }

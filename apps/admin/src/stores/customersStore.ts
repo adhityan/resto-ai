@@ -3,10 +3,8 @@ import { create } from "zustand";
 export interface CustomerListItem {
     id: string;
     name: string;
-    email: string;
-    address?: string;
-    remoteCustomerId: string;
-    stripeCustomerId: string;
+    email?: string;
+    phone?: string;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -14,17 +12,14 @@ export interface CustomerListItem {
 export interface CustomerDetail {
     id: string;
     name: string;
-    email: string;
-    address?: string;
-    remoteCustomerId: string;
-    stripeCustomerId: string;
+    email?: string;
+    phone?: string;
     createdAt: Date;
     updatedAt: Date;
 }
 
 export interface CustomerListFilters {
-    applications: string[];
-    products: string[];
+    restaurantId?: string;
     skip: number;
     take: number;
 }
@@ -38,13 +33,12 @@ interface CustomersState {
     setCustomers: (customers: CustomerListItem[], total: number) => void;
     selectedCustomer: CustomerDetail | null;
     setSelectedCustomer: (customer: CustomerDetail | null) => void;
-    setFilterValue: (type: keyof CustomerListFilters, values: string[] | number) => void;
+    setFilterValue: (type: keyof CustomerListFilters, values: string[] | string | number | undefined) => void;
     setPagination: (pagination: { skip: number; take: number }) => void;
 }
 
 const defaultFilters: CustomerListFilters = {
-    applications: [],
-    products: [],
+    restaurantId: undefined,
     skip: 0,
     take: 10,
 };

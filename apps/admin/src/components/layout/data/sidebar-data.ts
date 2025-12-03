@@ -2,12 +2,12 @@ import { LinkProps } from "@tanstack/react-router";
 import {
     IconHelp,
     IconLayoutDashboard,
-    IconCreditCard,
+    IconPhone,
     IconPalette,
     IconSettings,
     IconUsers,
-    IconBox,
-    IconPackage,
+    IconBuildingStore,
+    IconCalendarEvent,
 } from "@tabler/icons-react";
 import { type SidebarData } from "../types";
 
@@ -22,14 +22,14 @@ export const sidebarData: SidebarData = {
                     icon: IconLayoutDashboard,
                 },
                 {
-                    title: "Payments",
-                    url: "/payments" as LinkProps["to"],
-                    icon: IconCreditCard,
+                    title: "Calls",
+                    url: "/calls" as LinkProps["to"],
+                    icon: IconPhone,
                 },
                 {
-                    title: "Products",
-                    url: "/products" as LinkProps["to"],
-                    icon: IconPackage,
+                    title: "Reservations",
+                    url: "/reservations" as LinkProps["to"],
+                    icon: IconCalendarEvent,
                 },
                 {
                     title: "Customers",
@@ -46,9 +46,9 @@ export const sidebarData: SidebarData = {
                     icon: IconSettings,
                     items: [
                         {
-                            title: "Apps",
-                            url: "/settings/apps" as LinkProps["to"],
-                            icon: IconBox,
+                            title: "Restaurants",
+                            url: "/settings/restaurants" as LinkProps["to"],
+                            icon: IconBuildingStore,
                         },
                         {
                             title: "Admins",

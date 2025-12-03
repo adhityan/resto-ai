@@ -26,6 +26,19 @@ export class CryptoUtils {
     }
 
     /**
+     * Generates a secure random token suitable for API keys/secrets
+     *
+     * @param length - the number of characters in the token
+     *
+     * @returns URL-safe base64 encoded token
+     */
+    public static generateSecureToken(length: number): string {
+        // Generate enough bytes to ensure the base64 output is at least 'length' characters
+        const bytesNeeded = Math.ceil((length * 3) / 4);
+        return crypto.randomBytes(bytesNeeded).toString('base64url').slice(0, length);
+    }
+
+    /**
      * Encrypts password using bcrypt library
      *
      * @param password - plain text password to be encrypted

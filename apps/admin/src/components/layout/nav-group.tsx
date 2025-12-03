@@ -1,7 +1,7 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
-import { usePaymentsStore } from "@/stores/paymentsStore";
+import { useCallsStore } from "@/stores/callsStore";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
     SidebarGroup,
@@ -28,7 +28,6 @@ import { NavCollapsible, NavItem, NavLink, type NavGroup } from "./types";
 export function NavGroup({ title, items }: NavGroup) {
     const { state } = useSidebar();
     const href = useLocation({ select: (location) => location.href });
-    const _inProgressPayments = usePaymentsStore((s) => s.payments.filter((p) => p.status === "in_progress").length);
     return (
         <SidebarGroup>
             <SidebarGroupLabel>{title}</SidebarGroupLabel>
@@ -51,15 +50,15 @@ const NavBadge = ({ children }: { children: ReactNode }) => <Badge className="ro
 
 const SidebarMenuLink = ({ item, href }: { item: NavLink; href: string }) => {
     const { setOpenMobile } = useSidebar();
-    const _inProgressPayments = usePaymentsStore((s) => s.payments.filter((p) => p.status === "in_progress").length);
+    const activeCallsCount = useCallsStore((s) => s.activeCallsCount);
     return (
         <SidebarMenuItem>
             <SidebarMenuButton asChild isActive={checkIsActive(href, item)} tooltip={item.title}>
                 <Link to={item.url} onClick={() => setOpenMobile(false)}>
                     {item.icon && <item.icon />}
                     <span>{item.title}</span>
-                    {item.title === "Payments" ? (
-                        <NavBadge>{_inProgressPayments}</NavBadge>
+                    {item.title === "Calls" ? (
+                        <NavBadge>{activeCallsCount}</NavBadge>
                     ) : (
                         item.badge && <NavBadge>{item.badge}</NavBadge>
                     )}
@@ -71,7 +70,7 @@ const SidebarMenuLink = ({ item, href }: { item: NavLink; href: string }) => {
 
 const SidebarMenuCollapsible = ({ item, href }: { item: NavCollapsible; href: string }) => {
     const { setOpenMobile } = useSidebar();
-    const _inProgressPayments = usePaymentsStore((s) => s.payments.filter((p) => p.status === "in_progress").length);
+    const activeCallsCount = useCallsStore((s) => s.activeCallsCount);
     return (
         <Collapsible asChild defaultOpen={checkIsActive(href, item, true)} className="group/collapsible">
             <SidebarMenuItem>
@@ -79,8 +78,8 @@ const SidebarMenuCollapsible = ({ item, href }: { item: NavCollapsible; href: st
                     <SidebarMenuButton tooltip={item.title}>
                         {item.icon && <item.icon />}
                         <span>{item.title}</span>
-                        {item.title === "Payments" ? (
-                            <NavBadge>{_inProgressPayments}</NavBadge>
+                        {item.title === "Calls" ? (
+                            <NavBadge>{activeCallsCount}</NavBadge>
                         ) : (
                             item.badge && <NavBadge>{item.badge}</NavBadge>
                         )}
@@ -95,8 +94,8 @@ const SidebarMenuCollapsible = ({ item, href }: { item: NavCollapsible; href: st
                                     <Link to={subItem.url} onClick={() => setOpenMobile(false)}>
                                         {subItem.icon && <subItem.icon />}
                                         <span>{subItem.title}</span>
-                                        {subItem.title === "Payments" ? (
-                                            <NavBadge>{_inProgressPayments}</NavBadge>
+                                        {subItem.title === "Calls" ? (
+                                            <NavBadge>{activeCallsCount}</NavBadge>
                                         ) : (
                                             subItem.badge && <NavBadge>{subItem.badge}</NavBadge>
                                         )}
@@ -112,7 +111,7 @@ const SidebarMenuCollapsible = ({ item, href }: { item: NavCollapsible; href: st
 };
 
 const SidebarMenuCollapsedDropdown = ({ item, href }: { item: NavCollapsible; href: string }) => {
-    const _inProgressPayments = usePaymentsStore((s) => s.payments.filter((p) => p.status === "in_progress").length);
+    const activeCallsCount = useCallsStore((s) => s.activeCallsCount);
     return (
         <SidebarMenuItem>
             <DropdownMenu>
@@ -120,8 +119,8 @@ const SidebarMenuCollapsedDropdown = ({ item, href }: { item: NavCollapsible; hr
                     <SidebarMenuButton tooltip={item.title} isActive={checkIsActive(href, item)}>
                         {item.icon && <item.icon />}
                         <span>{item.title}</span>
-                        {item.title === "Payments" ? (
-                            <NavBadge>{_inProgressPayments}</NavBadge>
+                        {item.title === "Calls" ? (
+                            <NavBadge>{activeCallsCount}</NavBadge>
                         ) : (
                             item.badge && <NavBadge>{item.badge}</NavBadge>
                         )}
@@ -138,8 +137,8 @@ const SidebarMenuCollapsedDropdown = ({ item, href }: { item: NavCollapsible; hr
                             <Link to={sub.url} className={`${checkIsActive(href, sub) ? "bg-secondary" : ""}`}>
                                 {sub.icon && <sub.icon />}
                                 <span className="max-w-52 text-wrap">{sub.title}</span>
-                                {sub.title === "Payments" ? (
-                                    <span className="ml-auto text-xs">{_inProgressPayments}</span>
+                                {sub.title === "Calls" ? (
+                                    <span className="ml-auto text-xs">{activeCallsCount}</span>
                                 ) : (
                                     sub.badge && <span className="ml-auto text-xs">{sub.badge}</span>
                                 )}

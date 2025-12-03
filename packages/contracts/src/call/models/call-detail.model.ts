@@ -1,0 +1,105 @@
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { Call, CallStatus, Customer, Restaurant } from "@repo/database";
+
+export class CallDetailCustomerModel {
+    @ApiProperty()
+    id: string;
+
+    @ApiProperty()
+    name: string;
+
+    @ApiPropertyOptional()
+    email: string | undefined;
+
+    @ApiPropertyOptional()
+    phone: string | undefined;
+
+    constructor(customer: Customer) {
+        this.id = customer.id;
+        this.name = customer.name;
+        this.email = customer.email ?? undefined;
+        this.phone = customer.phone ?? undefined;
+    }
+}
+
+export class CallDetailRestaurantModel {
+    @ApiProperty()
+    id: string;
+
+    @ApiProperty()
+    name: string;
+
+    @ApiProperty()
+    incomingPhoneNumber: string;
+
+    constructor(restaurant: Restaurant) {
+        this.id = restaurant.id;
+        this.name = restaurant.name;
+        this.incomingPhoneNumber = restaurant.incomingPhoneNumber;
+    }
+}
+
+export class CallDetailModel {
+    @ApiProperty()
+    id: string;
+
+    @ApiProperty({ enum: ["ACTIVE", "COMPLETED", "FAILED"] })
+    status: CallStatus;
+
+    @ApiProperty()
+    startTime: Date;
+
+    @ApiPropertyOptional()
+    endTime: Date | undefined;
+
+    @ApiPropertyOptional()
+    duration: number | undefined; // in seconds
+
+    @ApiPropertyOptional()
+    transcript: string | undefined;
+
+    @ApiPropertyOptional()
+    language: string | undefined;
+
+    @ApiProperty()
+    escalationRequested: boolean;
+
+    @ApiPropertyOptional()
+    zenchefReservationId: string | undefined;
+
+    @ApiPropertyOptional({ type: CallDetailCustomerModel })
+    customer: CallDetailCustomerModel | undefined;
+
+    @ApiProperty({ type: CallDetailRestaurantModel })
+    restaurant: CallDetailRestaurantModel;
+
+    @ApiProperty()
+    createdAt: Date;
+
+    @ApiProperty()
+    updatedAt: Date;
+
+    constructor(
+        call: Call & {
+            customer?: Customer | null;
+            restaurant: Restaurant;
+        }
+    ) {
+        this.id = call.id;
+        this.status = call.status;
+        this.startTime = call.startTime;
+        this.endTime = call.endTime ?? undefined;
+        this.duration = call.duration ?? undefined;
+        this.transcript = call.transcript ?? undefined;
+        this.language = call.language ?? undefined;
+        this.escalationRequested = call.escalationRequested;
+        this.zenchefReservationId = call.zenchefReservationId ?? undefined;
+        this.customer = call.customer
+            ? new CallDetailCustomerModel(call.customer)
+            : undefined;
+        this.restaurant = new CallDetailRestaurantModel(call.restaurant);
+        this.createdAt = call.createdAt;
+        this.updatedAt = call.updatedAt;
+    }
+}
+

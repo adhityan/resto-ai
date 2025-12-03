@@ -12,6 +12,24 @@ enum UserType {
   SUPER_ADMIN
 }
 
+enum CallStatus {
+  ACTIVE
+  COMPLETED
+  FAILED
+}
+
+enum ReservationStatus {
+  WAITING
+  WAITING_CUSTOMER
+  CONFIRMED
+  CANCELED
+  REFUSED
+  ARRIVED
+  SEATED
+  OVER
+  NO_SHOWN
+}
+
 enum ItemType {
   DRINK
   APPETIZER
@@ -34,11 +52,30 @@ model Restaurant {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  menus        Menu[]
-  customers    Customer[]
-  seatingAreas SeatingArea[]
+  menus           Menu[]
+  customers       Customer[]
+  seatingAreas    SeatingArea[]
+  calls           Call[]
+  authentications RestaurantAuthentication[]
+  reservations    Reservation[]
 
   @@index([incomingPhoneNumber])
+}
+
+model RestaurantAuthentication {
+  id           String  @id @default(uuid())
+  clientId     String  @unique
+  clientSecret String // Hashed secret, never exposed after creation
+  isActive     Boolean @default(true)
+
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([restaurantId])
+  @@index([clientId])
 }
 
 model SeatingArea {
@@ -97,10 +134,62 @@ model Customer {
 
   restaurantId String
   restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
+  calls        Call[]
 
   @@unique([restaurantId, email])
   @@unique([restaurantId, phone])
   @@index([restaurantId, name])
+}
+
+model Call {
+  id                  String     @id @default(uuid())
+  status              CallStatus @default(ACTIVE)
+  startTime           DateTime   @default(now())
+  endTime             DateTime?
+  duration            Int? // in seconds
+  transcript          String?
+  language            String?
+  escalationRequested Boolean    @default(false)
+
+  customerId           String?
+  customer             Customer?  @relation(fields: [customerId], references: [id])
+  restaurantId         String
+  restaurant           Restaurant @relation(fields: [restaurantId], references: [id])
+  zenchefReservationId String? // External Zenchef booking ID
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([restaurantId])
+  @@index([customerId])
+  @@index([status])
+  @@index([startTime])
+}
+
+model Reservation {
+  id               String            @id @default(uuid())
+  zenchefBookingId String
+  status           ReservationStatus @default(WAITING)
+  date             String // YYYY-MM-DD format
+  time             String // HH:MM format
+  numberOfGuests   Int
+  customerName     String
+  customerPhone    String?
+  customerEmail    String?
+  comments         String?
+  allergies        String?
+  seatingAreaName  String?
+
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([restaurantId, zenchefBookingId])
+  @@index([restaurantId])
+  @@index([restaurantId, date])
+  @@index([status])
 }
 
 model User {

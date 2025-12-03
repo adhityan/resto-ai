@@ -15,6 +15,8 @@ import { CustomerModule } from "../customer/customer.module";
 import { CurrencyModule } from "../currency/currency.module";
 import { ZenchefModule } from "../zenchef/zenchef.module";
 import { ReservationsModule } from "../reservations/reservations.module";
+import { StatsModule } from "../stats/stats.module";
+import { CallsModule } from "../calls/calls.module";
 
 @Module({
     imports: [
@@ -26,6 +28,8 @@ import { ReservationsModule } from "../reservations/reservations.module";
         CurrencyModule,
         ZenchefModule,
         ReservationsModule,
+        StatsModule,
+        CallsModule,
         DatabaseModule.forRoot(),
 
         TerminusModule,

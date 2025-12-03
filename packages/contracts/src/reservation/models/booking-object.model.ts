@@ -95,6 +95,13 @@ export class BookingObjectModel {
     })
     description: string;
 
+    @ApiProperty({
+        description: "Reservation status",
+        example: "confirmed",
+        required: false,
+    })
+    status?: string;
+
     constructor(data: {
         bookingId: string;
         numberOfCustomers: number;
@@ -122,6 +129,7 @@ export class BookingObjectModel {
         this.seatingAreaId = data.seatingAreaId;
         this.seatingAreaName = data.seatingAreaName;
         this.description = data.description;
+        this.status = data.status;
         
         // Calculate canModify and canCancel based on status and date
         const unchangeableStatuses = ['canceled', 'refused', 'over', 'no_shown'];

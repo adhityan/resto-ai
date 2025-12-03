@@ -10,3 +10,4 @@ export * from "./cancel-reservation-response.model";
 export * from "./cancel-reservation-by-id-request.model";
 export * from "./booking-object.model";
 export * from "./seating-area.model";
+export * from "./admin-reservation.model";

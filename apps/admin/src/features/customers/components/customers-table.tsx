@@ -91,7 +91,7 @@ export default function CustomersTable({ data, columns, total }: Props) {
                     </TableBody>
                 </Table>
             </div>
-            <DataTablePagination table={table} total={total} filters={filters} />
+            <DataTablePagination table={table} />
         </div>
     );
 }
