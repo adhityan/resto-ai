@@ -1,0 +1,8 @@
+{
+    "extends": ["//"],
+    "tasks": {
+        "download-files": {
+            "cache": false
+        }
+    }
+}

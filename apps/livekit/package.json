@@ -1,0 +1,36 @@
+{
+    "name": "livekit",
+    "type": "module",
+    "version": "0.0.1",
+    "description": "",
+    "author": "K V Adhityan",
+    "private": true,
+    "license": "UNLICENSED",
+    "scripts": {
+        "build": "tsc -b -v",
+        "download-files": "tsx src/main.ts download-files",
+        "dev": "tsx watch src/main.ts dev --log-level=debug",
+        "lint": "eslint \"{src,apps,libs,test}/*/.ts\" --fix",
+        "start": "node dist/agent.js start"
+    },
+    "dependencies": {
+        "zod": "^4.1.13",
+        "dotenv": "^17.2.3",
+        "@livekit/agents": "^1.0.23",
+        "@livekit/agents-plugin-deepgram": "^1.0.23",
+        "@livekit/agents-plugin-elevenlabs": "^1.0.23",
+        "@livekit/agents-plugin-livekit": "^1.0.23",
+        "@livekit/agents-plugin-google": "^1.0.23",
+        "@livekit/agents-plugin-silero": "^1.0.23",
+        "@livekit/noise-cancellation-node": "^0.1.9",
+        "@repo/utils": "*"
+    },
+    "devDependencies": {
+        "tsx": "^4.21.0",
+        "@repo/eslint-config": "*",
+        "@repo/typescript-config": "*",
+        "@types/node": "^24.10.1",
+        "eslint": "^9.39.1",
+        "typescript": "^5.9.3"
+    }
+}
