@@ -16,30 +16,46 @@ import * as silero from "@livekit/agents-plugin-silero";
 import { fileURLToPath } from "node:url";
 import "dotenv/config";
 
-import { RestaurantStandardAgent } from "./agents/restaurantStandard.js";
 import { createToken } from "./utils/token.js";
-import { getFieldFromContext, getRequiredMetadataField } from "./utils/call.js";
+import { RestaurantStandardAgent } from "./agents/restaurantStandard.js";
+import { endCall, getFieldFromContext } from "./utils/call.js";
+import { getRestaurantKeyByPhone } from "./utils/restaurant.js";
 
-const token = await createToken("test-room", "user_123");
-console.log("Token: ", token);
+if (process.argv.includes("dev")) {
+    const token = await createToken("test-room", "user_123");
+    console.log("Token: ", token);
+}
 
 export default defineAgent({
     prewarm: async (proc: JobProcess) => {
         proc.userData.vad = await silero.VAD.load();
     },
     entry: async (ctx: JobContext) => {
-        console.log("Room name: ", ctx.job?.room?.name);
-
-        console.log("Metadata: ", ctx.job?.metadata);
-        const restaurantApiKey = await getRequiredMetadataField(
-            ctx,
-            "restaurantApiKey"
+        console.log(
+            "Job received for room name: ",
+            ctx.job?.room?.name,
+            "with metadata: ",
+            ctx.job?.metadata
         );
-        if (!restaurantApiKey) return;
 
-        const restaurantId = getFieldFromContext(ctx, "restaurantId");
-        console.log(`Starting session for restaurant: ${restaurantId}...`);
+        const calledPhoneNumber = getFieldFromContext(ctx, "calledPhoneNumber");
+        const restaurantApiKey = getRestaurantKeyByPhone(calledPhoneNumber);
+        if (!restaurantApiKey) {
+            console.error(
+                `Restaurant API key not found for phone number: ${calledPhoneNumber}`
+            );
+            await endCall(ctx);
+            return;
+        }
 
+        const callerPhoneNumber = getFieldFromContext(ctx, "callerPhoneNumber");
+        if (!callerPhoneNumber) {
+            console.error(`Caller phone number not found in job metadata`);
+            await endCall(ctx);
+            return;
+        }
+
+        console.log(`Starting session for caller: ${callerPhoneNumber}...`);
         const session = new voice.AgentSession({
             stt: new deepgram.STT({
                 detectLanguage: true,
@@ -84,8 +100,8 @@ export default defineAgent({
         // Start the session with the restaurant standard agent
         await session.start({
             agent: new RestaurantStandardAgent({
-                metadata: ctx.job.metadata,
-                apiKey: restaurantApiKey,
+                restaurantApiKey,
+                callerPhoneNumber,
             }),
             room: ctx.room,
             outputOptions: {

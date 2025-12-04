@@ -22,9 +22,8 @@ export const createToken = async (
             new RoomAgentDispatch({
                 agentName: "resto-ai",
                 metadata: JSON.stringify({
-                    restaurantId: "353816f8-4204-406c-842f-529347706874",
-                    restaurantApiKey: "YWRoaXR5YW46ZnpMcThUTjRpcHNISnN2",
-                    customer_number: "+31612345678",
+                    calledPhoneNumber: "+31612345678",
+                    callerPhoneNumber: "+31612345678",
                 }),
             }),
         ],

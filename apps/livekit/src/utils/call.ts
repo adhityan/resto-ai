@@ -34,27 +34,6 @@ export function getFieldFromContext(
     }
 }
 
-/**
- * Extracts a required field from job metadata.
- * If the field is missing, logs an error and ends the call.
- * @returns The field value if found, null otherwise (call will be ended)
- */
-export async function getRequiredMetadataField(
-    ctx: JobContext,
-    field: string,
-    errorMessage?: string
-): Promise<string | null> {
-    const value = getFieldFromContext(ctx, field);
-
-    if (!value) {
-        console.error(errorMessage ?? `${field} is required in job metadata!`);
-        await endCall(ctx);
-        return null;
-    }
-
-    return value;
-}
-
 export async function endCall(context?: JobContext) {
     const jobContext = context ?? getJobContext();
     if (!jobContext) {

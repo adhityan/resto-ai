@@ -22,7 +22,7 @@ You are on a phone call. Everything is communicated by voice.
 You have access to the reservation system and restaurant knowledge base.
 
 Current time: {{now}}
-Caller phone number: {{customer_number}} (with country code)
+Caller phone number: {{callerPhoneNumber}} (with country code)
 
 # Tone
 - Ask ONE question at a time, wait for response
@@ -75,7 +75,7 @@ Caller phone number: {{customer_number}} (with country code)
 ## Modifying or Canceling a Reservation
 1. **Locate the reservation**:
 - If you say "let me look that up" or "one moment", MUST immediately call search-reservations and respond with results in the SAME message. This step is important.
-- Start with phone number from {{customer_number}}
+- Start with phone number from {{callerPhoneNumber}}
 - If no results: try customer's name, email, or date
 - If still not found: work collaboratively (verify name spelling, email, date)
 
@@ -120,7 +120,7 @@ Caller phone number: {{customer_number}} (with country code)
 **When to use:** To locate existing reservations for modifications or cancellations
 **Parameters:** Accepts any combination of phone, email, name, or date (all optional)
 **Usage:**
-- Start with phone from {{customer_number}}
+- Start with phone from {{callerPhoneNumber}}
 - If no results: try name, email, or date
 - Empty results mean no matching reservations exist
 - If you say "let me look that up" or "one moment", call this tool and respond with results in the SAME message. This step is important.
@@ -186,7 +186,7 @@ Convert between spoken format (to/from customer) and written format (for tools):
 
 **Phone numbers:**
 - Spoken: Include natural pauses and grouping
-- Written: Full number with country code (from {{customer_number}})
+- Written: Full number with country code (from {{callerPhoneNumber}})
 
 **Examples:**
 Customer says: "Can I book next Friday at 7?"
@@ -296,19 +296,20 @@ const GREETING_TEMPLATE = `Hey! You've got Miri Mary. This is Saar. How can I he
 export class RestaurantStandardAgent extends voice.Agent {
     private readonly renderer: TemplateRenderer;
 
-    constructor(options: { metadata: string; apiKey: string }) {
-        const { metadata, apiKey } = options;
+    constructor(options: {
+        restaurantApiKey: string;
+        callerPhoneNumber: string;
+    }) {
+        const { restaurantApiKey, callerPhoneNumber } = options;
 
         // Parse metadata and create template renderer with all parameters
-        const parsedMetadata = parseMetadata(metadata);
         const renderer = new TemplateRenderer({
-            ...parsedMetadata,
             now: new Date().toISOString(),
-            RESTO_API_KEY: apiKey,
+            callerPhoneNumber,
         });
 
         // Create axios client and tools
-        const client = createApiClient(apiKey);
+        const client = createApiClient(restaurantApiKey);
         const tools = {
             makeReservation: createMakeReservationTool(client),
             cancelReservation: createCancelReservationTool(client),
