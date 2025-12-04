@@ -1,9 +1,10 @@
 import { Injectable, Logger } from "@nestjs/common";
-import { DatabaseService, Call, CallStatus } from "@repo/database";
+import { DatabaseService, CallStatus } from "@repo/database";
 import {
     CallListItemModel,
     CallListResponseModel,
     CallDetailModel,
+    CreateCallModel,
 } from "@repo/contracts";
 
 export interface CallFilters {
@@ -25,7 +26,9 @@ export class CallsService {
      * Get paginated list of calls with filters
      */
     async getCalls(filters: CallFilters): Promise<CallListResponseModel> {
-        this.logger.log(`Fetching calls with filters: ${JSON.stringify(filters)}`);
+        this.logger.log(
+            `Fetching calls with filters: ${JSON.stringify(filters)}`
+        );
 
         const where: any = {};
 
@@ -93,5 +96,27 @@ export class CallsService {
             where: { status: CallStatus.ACTIVE },
         });
     }
-}
 
+    /**
+     * Create a new call
+     */
+    async createCall(data: CreateCallModel): Promise<CallDetailModel> {
+        this.logger.log(
+            `Creating call for restaurant: ${data.restaurantId}, customer: ${data.customerId}`
+        );
+
+        const call = await this.databaseService.call.create({
+            data: {
+                languages: data.languages,
+                restaurantId: data.restaurantId,
+                customerId: data.customerId,
+            },
+            include: {
+                customer: true,
+                restaurant: true,
+            },
+        });
+
+        return new CallDetailModel(call);
+    }
+}

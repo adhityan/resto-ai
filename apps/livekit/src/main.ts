@@ -19,11 +19,82 @@ import "dotenv/config";
 import { createToken } from "./utils/token.js";
 import { RestaurantStandardAgent } from "./agents/restaurantStandard.js";
 import { endCall, getFieldFromContext } from "./utils/call.js";
-import { getRestaurantKeyByPhone } from "./utils/restaurant.js";
+import { getRestaurantByPhone } from "./utils/restaurant.js";
+import { createApiClient } from "./utils/http.js";
+import { CallModel, CustomerModel } from "@repo/contracts";
+import { AxiosInstance } from "axios";
 
 if (process.argv.includes("dev")) {
     const token = await createToken("test-room", "user_123");
     console.log("Token: ", token);
+}
+
+function createSession(ctx: JobContext) {
+    return new voice.AgentSession({
+        stt: new deepgram.STT({
+            detectLanguage: true,
+            model: "nova-3",
+        }),
+
+        tts: new elevenlabs.TTS({
+            modelID: "eleven_flash_v2_5",
+            voice: {
+                name: "Hope",
+                id: "zGjIP4SZlMnY9m93k97r",
+                category: "conversational",
+            },
+        }),
+
+        llm: new gemini.LLM({
+            vertexai: true,
+            model: "gemini-2.5-flash",
+        }),
+
+        turnDetection: new livekit.turnDetector.MultilingualModel(),
+        vad: ctx.proc.userData.vad! as silero.VAD,
+        voiceOptions: {
+            minInterruptionWords: 1,
+            preemptiveGeneration: true,
+        },
+    });
+}
+
+function createUsageCollector(ctx: JobContext, session: voice.AgentSession) {
+    const usageCollector = new metrics.UsageCollector();
+    session.on(voice.AgentSessionEventTypes.MetricsCollected, (ev) => {
+        metrics.logMetrics(ev.metrics);
+        usageCollector.collect(ev.metrics);
+    });
+
+    const logUsage = async () => {
+        const summary = usageCollector.getSummary();
+        console.log(`Usage: ${JSON.stringify(summary)}`);
+    };
+    ctx.addShutdownCallback(logUsage);
+}
+
+async function getCustomerByPhoneNumber(
+    client: AxiosInstance,
+    phoneNumber: string
+) {
+    const { data } = await client.post<CustomerModel>(`/customers`, {
+        phone: phoneNumber,
+        isOnCall: true,
+    });
+    return data;
+}
+
+async function createCallInDatabase(
+    client: AxiosInstance,
+    restaurantId: string,
+    customerId: string
+) {
+    const { data } = await client.post<CallModel>(`/calls`, {
+        customerId,
+        languages: "en",
+        restaurantId: restaurantId,
+    });
+    return data;
 }
 
 export default defineAgent({
@@ -39,10 +110,10 @@ export default defineAgent({
         );
 
         const calledPhoneNumber = getFieldFromContext(ctx, "calledPhoneNumber");
-        const restaurantApiKey = getRestaurantKeyByPhone(calledPhoneNumber);
-        if (!restaurantApiKey) {
+        const restaurantDetails = getRestaurantByPhone(calledPhoneNumber);
+        if (!restaurantDetails) {
             console.error(
-                `Restaurant API key not found for phone number: ${calledPhoneNumber}`
+                `Restaurant details not found for incoming number: ${calledPhoneNumber}`
             );
             await endCall(ctx);
             return;
@@ -55,53 +126,30 @@ export default defineAgent({
             return;
         }
 
-        console.log(`Starting session for caller: ${callerPhoneNumber}...`);
-        const session = new voice.AgentSession({
-            stt: new deepgram.STT({
-                detectLanguage: true,
-                model: "nova-3",
-            }),
+        const client = createApiClient(restaurantDetails.apiKey);
+        const customer = await getCustomerByPhoneNumber(
+            client,
+            callerPhoneNumber
+        );
+        console.log(`Customer ID: ${customer.id}`);
 
-            tts: new elevenlabs.TTS({
-                modelID: "eleven_flash_v2_5",
-                voice: {
-                    name: "Hope",
-                    id: "zGjIP4SZlMnY9m93k97r",
-                    category: "conversational",
-                },
-            }),
+        const call = await createCallInDatabase(
+            client,
+            restaurantDetails.restaurantId,
+            customer.id
+        );
+        console.log(`Call created: ${call.id}`);
 
-            llm: new gemini.LLM({
-                vertexai: true,
-                model: "gemini-2.5-flash",
-            }),
-
-            turnDetection: new livekit.turnDetector.MultilingualModel(),
-            vad: ctx.proc.userData.vad! as silero.VAD,
-            voiceOptions: {
-                minInterruptionWords: 1,
-                preemptiveGeneration: true,
-            },
-        });
-
+        console.log(`Starting session for: ${customer.name ?? customer.phone}`);
+        const session = createSession(ctx);
         // Metrics collection
-        const usageCollector = new metrics.UsageCollector();
-        session.on(voice.AgentSessionEventTypes.MetricsCollected, (ev) => {
-            metrics.logMetrics(ev.metrics);
-            usageCollector.collect(ev.metrics);
-        });
-
-        const logUsage = async () => {
-            const summary = usageCollector.getSummary();
-            console.log(`Usage: ${JSON.stringify(summary)}`);
-        };
-        ctx.addShutdownCallback(logUsage);
+        createUsageCollector(ctx, session);
 
         // Start the session with the restaurant standard agent
         await session.start({
             agent: new RestaurantStandardAgent({
-                restaurantApiKey,
-                callerPhoneNumber,
+                restaurantApiKey: restaurantDetails.apiKey,
+                customer,
             }),
             room: ctx.room,
             outputOptions: {

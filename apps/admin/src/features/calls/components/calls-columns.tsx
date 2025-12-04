@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { DataTableColumnHeader } from "@/components/data-table-column-header";
 import { CallListItem } from "@/stores/callsStore";
+import { calculateDurationSeconds, formatDuration } from "@/utils/format";
 
 const getStatusVariant = (status: string) => {
     switch (status) {
@@ -16,16 +17,6 @@ const getStatusVariant = (status: string) => {
         default:
             return "outline";
     }
-};
-
-const formatDuration = (seconds: number | undefined) => {
-    if (!seconds) return "-";
-    const minutes = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    if (minutes > 0) {
-        return `${minutes}m ${secs}s`;
-    }
-    return `${secs}s`;
 };
 
 export const columns: ColumnDef<CallListItem>[] = [
@@ -45,7 +36,7 @@ export const columns: ColumnDef<CallListItem>[] = [
     {
         accessorKey: "customerName",
         header: ({ column }) => <DataTableColumnHeader column={column} title="Customer" />,
-        cell: ({ row }) => row.original.customerName || "Unknown",
+        cell: ({ row }) => row.original.customerName || row.original.customerId || "Unknown",
     },
     {
         accessorKey: "restaurantName",
@@ -53,9 +44,12 @@ export const columns: ColumnDef<CallListItem>[] = [
         cell: ({ row }) => row.original.restaurantName,
     },
     {
-        accessorKey: "duration",
+        accessorKey: "endTime",
         header: ({ column }) => <DataTableColumnHeader column={column} title="Duration" />,
-        cell: ({ row }) => formatDuration(row.original.duration),
+        cell: ({ row }) => {
+            const duration = calculateDurationSeconds(row.original.startTime, row.original.endTime);
+            return formatDuration(duration);
+        },
     },
     {
         accessorKey: "language",

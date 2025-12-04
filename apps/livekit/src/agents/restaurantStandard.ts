@@ -7,6 +7,8 @@ import { createMakeReservationTool } from "../tools/makeReservation.js";
 import { createSearchReservationsTool } from "../tools/searchReservations.js";
 import { createCheckAvailabilityTool } from "../tools/checkAvailability.js";
 import { createGetRestaurantDetailTool } from "../tools/getRestaurantDetail.js";
+import { CustomerModel } from "@repo/contracts";
+import { describeCustomerKnowledge } from "src/utils/customer.js";
 
 const AGENT_INSTRUCTIONS = `# Personality
 You are Saar, working at Miri Mary restaurant in Amsterdam's De Pijp neighborhood.
@@ -270,6 +272,11 @@ After completing any task, ask: "Can I help you with anything else today?"
 
 
 
+# Customer / caller information
+{{describeCustomerKnowledge}}
+
+
+
 # Restaurant Information
 **Hours:**
 - Mon-Thu: Dinner 5:30-10pm
@@ -297,14 +304,15 @@ export class RestaurantStandardAgent extends voice.Agent {
 
     constructor(options: {
         restaurantApiKey: string;
-        callerPhoneNumber: string;
+        customer: CustomerModel;
     }) {
-        const { restaurantApiKey, callerPhoneNumber } = options;
+        const { restaurantApiKey, customer } = options;
 
         // Parse metadata and create template renderer with all parameters
         const renderer = new TemplateRenderer({
             now: new Date().toISOString(),
-            callerPhoneNumber,
+            callerPhoneNumber: customer.phone,
+            describeCustomerKnowledge: describeCustomerKnowledge(customer),
         });
 
         // Create axios client and tools

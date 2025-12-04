@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useParams, useRouter } from "@tanstack/react-router";
+import { Link, useParams, useRouter } from "@tanstack/react-router";
 import { IconArrowLeft, IconCopy } from "@tabler/icons-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -14,6 +14,7 @@ import { Main } from "@/components/layout/main";
 import { ProfileDropdown } from "@/components/profile-dropdown";
 import { Search } from "@/components/search";
 import { ThemeSwitch } from "@/components/theme-switch";
+import { calculateDurationSeconds, formatDuration } from "@/utils/format";
 
 const getStatusVariant = (status: string) => {
     switch (status) {
@@ -26,16 +27,6 @@ const getStatusVariant = (status: string) => {
         default:
             return "outline";
     }
-};
-
-const formatDuration = (seconds: number | undefined) => {
-    if (!seconds) return "-";
-    const minutes = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    if (minutes > 0) {
-        return `${minutes}m ${secs}s`;
-    }
-    return `${secs}s`;
 };
 
 export default function CallDetailPage() {
@@ -122,10 +113,14 @@ export default function CallDetailPage() {
                             <CardDescription>Core call details and status</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            <div>
-                                <p className="text-muted-foreground text-sm font-medium">Duration</p>
-                                <p className="text-2xl font-bold">{formatDuration(call.duration)}</p>
-                            </div>
+                            {call.endTime && (
+                                <div>
+                                    <p className="text-muted-foreground text-sm font-medium">Duration</p>
+                                    <p className="text-2xl font-bold">
+                                        {formatDuration(calculateDurationSeconds(call.startTime, call.endTime))}
+                                    </p>
+                                </div>
+                            )}
                             <div>
                                 <p className="text-muted-foreground text-sm font-medium">Language</p>
                                 <p className="text-sm">{call.language || "Unknown"}</p>
@@ -151,10 +146,12 @@ export default function CallDetailPage() {
                                 <CardDescription>Customer information</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                                <div>
-                                    <p className="text-muted-foreground text-sm font-medium">Name</p>
-                                    <p className="text-sm">{call.customer.name}</p>
-                                </div>
+                                {call.customer.name && (
+                                    <div>
+                                        <p className="text-muted-foreground text-sm font-medium">Name</p>
+                                        <p className="text-sm">{call.customer.name}</p>
+                                    </div>
+                                )}
                                 {call.customer.email && (
                                     <div>
                                         <p className="text-muted-foreground text-sm font-medium">Email</p>
@@ -169,7 +166,13 @@ export default function CallDetailPage() {
                                 )}
                                 <div>
                                     <p className="text-muted-foreground text-sm font-medium">Customer ID</p>
-                                    <p className="font-mono text-sm">{call.customer.id}</p>
+                                    <Link
+                                        to="/customers/$customerId"
+                                        params={{ customerId: call.customer.id }}
+                                        className="text-primary hover:underline font-mono text-sm"
+                                    >
+                                        {call.customer.id}
+                                    </Link>
                                 </div>
                             </CardContent>
                         </Card>
@@ -192,7 +195,13 @@ export default function CallDetailPage() {
                             </div>
                             <div>
                                 <p className="text-muted-foreground text-sm font-medium">Restaurant ID</p>
-                                <p className="font-mono text-sm">{call.restaurant.id}</p>
+                                <Link
+                                    to="/settings/restaurants/$restaurantId"
+                                    params={{ restaurantId: call.restaurant.id }}
+                                    className="text-primary hover:underline font-mono text-sm"
+                                >
+                                    {call.restaurant.id}
+                                </Link>
                             </div>
                         </CardContent>
                     </Card>

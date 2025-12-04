@@ -109,55 +109,12 @@ export class ReservationsController {
     ): Promise<BookingObjectModel> {
         const restaurantId = req.loginPayload.userId;
 
-        // Customer management: Find by email first (source of truth)
-        let customer = await this.customerService.findCustomerByEmail(
-            restaurantId,
-            body.email
-        );
-
-        if (customer) {
-            // Customer exists by email - update phone/name if different
-            const updates: { phone?: string; name?: string } = {};
-            if (customer.phone !== body.phone) {
-                updates.phone = body.phone;
-            }
-            if (customer.name !== body.name) {
-                updates.name = body.name;
-            }
-            if (Object.keys(updates).length > 0) {
-                await this.customerService.updateCustomer(
-                    restaurantId,
-                    customer.id,
-                    updates
-                );
-            }
-        } else {
-            // Not found by email - try phone
-            customer = await this.customerService.findCustomerByPhone(
-                restaurantId,
-                body.phone
-            );
-
-            if (customer) {
-                // Found by phone - update with email and name
-                await this.customerService.updateCustomer(
-                    restaurantId,
-                    customer.id,
-                    {
-                        email: body.email,
-                        name: body.name,
-                    }
-                );
-            } else {
-                // Create new customer
-                await this.customerService.createCustomer(
-                    restaurantId,
-                    body.name,
-                    body.email,
-                    body.phone
-                );
-            }
-        }
+        // Upsert customer (phone is the unique identifier)
+        await this.customerService.upsertCustomer(restaurantId, {
+            phone: body.phone,
+            name: body.name,
+            email: body.email,
+        });
 
         return this.reservationsService.createReservation(
             restaurantId,
@@ -287,11 +244,17 @@ export class ReservationsController {
      */
     @OnlyAdmin()
     @Get("admin/list")
-    @ApiOperation({ summary: "Get all reservations from local database (Admin UI)" })
+    @ApiOperation({
+        summary: "Get all reservations from local database (Admin UI)",
+    })
     @ApiOkResponse({ type: AdminReservationListResponseModel })
     @ApiQuery({ name: "restaurantId", required: false })
     @ApiQuery({ name: "date", required: false })
-    @ApiQuery({ name: "status", required: false, description: "Comma-separated statuses" })
+    @ApiQuery({
+        name: "status",
+        required: false,
+        description: "Comma-separated statuses",
+    })
     @ApiQuery({ name: "skip", required: false, type: Number })
     @ApiQuery({ name: "take", required: false, type: Number })
     async getAdminReservations(
@@ -324,12 +287,15 @@ export class ReservationsController {
      */
     @OnlyAdmin()
     @Get("admin/:id")
-    @ApiOperation({ summary: "Get reservation by ID from local database (Admin UI)" })
+    @ApiOperation({
+        summary: "Get reservation by ID from local database (Admin UI)",
+    })
     @ApiOkResponse({ type: AdminReservationModel })
     async getAdminReservationById(
         @Param("id") id: string
     ): Promise<AdminReservationModel> {
-        const reservation = await this.reservationsService.getReservationFromDbById(id);
+        const reservation =
+            await this.reservationsService.getReservationFromDbById(id);
         if (!reservation) {
             throw new Error("Reservation not found");
         }

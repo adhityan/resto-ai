@@ -26,15 +26,16 @@ import { Public } from "src/decorators/public.decorator";
 import { isAuthenticated, OnlyAdmin } from "src/decorators/user-api.decorator";
 import { AuthenticatedRequest } from "src/types/request";
 import { UserService } from "../user/user.service";
+import { UserNotFoundError } from "src/errors";
 
 @ApiTags("auth")
 @Controller("auth")
 export class AuthController {
     @Inject()
-    private authService: AuthService;
+    private readonly authService: AuthService;
 
     @Inject()
-    private userService: UserService;
+    private readonly userService: UserService;
 
     @isAuthenticated()
     @Get("/refresh")
@@ -79,7 +80,7 @@ export class AuthController {
         );
     }
 
-    @isAuthenticated()
+    @OnlyAdmin()
     @Patch("/user/change-password")
     @ApiOkResponse({
         type: UserChangePasswordSuccessResponse,
@@ -96,16 +97,17 @@ export class AuthController {
         return new UserChangePasswordSuccessResponse();
     }
 
-    @isAuthenticated()
+    @OnlyAdmin()
     @ApiOkResponse({
         type: UserModel,
     })
     @Get("/user/")
     public async me(@Req() req: AuthenticatedRequest): Promise<UserModel> {
-        return new UserModel(
-            (await this.userService.findUserById(
-                req.loginPayload.userId
-            )) as User
+        const user = await this.userService.findUserById(
+            req.loginPayload.userId
         );
+        if (!user)
+            throw new UserNotFoundError({ userId: req.loginPayload.userId });
+        return new UserModel(user);
     }
 }

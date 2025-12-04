@@ -17,14 +17,35 @@ export class StatsService {
     constructor(private readonly databaseService: DatabaseService) {}
 
     /**
+     * Compute call duration in seconds from startTime and endTime
+     */
+    private computeDurationInSeconds(call: {
+        startTime: Date;
+        endTime: Date | null;
+    }): number {
+        if (!call.endTime) return 0;
+        return Math.round(
+            (call.endTime.getTime() - call.startTime.getTime()) / 1000
+        );
+    }
+
+    /**
      * Get dashboard statistics
      */
     async getDashboardStats(): Promise<DashboardResponseModel> {
         this.logger.log("Fetching dashboard stats");
 
         const now = new Date();
-        const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-        const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const startOfCurrentMonth = new Date(
+            now.getFullYear(),
+            now.getMonth(),
+            1
+        );
+        const startOfLastMonth = new Date(
+            now.getFullYear(),
+            now.getMonth() - 1,
+            1
+        );
         const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
 
         // Get current month calls
@@ -49,11 +70,11 @@ export class StatsService {
         const lastCallCount = lastMonthCalls.length;
 
         const currentDuration = currentMonthCalls.reduce(
-            (sum, call) => sum + (call.duration || 0),
+            (sum, call) => sum + this.computeDurationInSeconds(call),
             0
         );
         const lastDuration = lastMonthCalls.reduce(
-            (sum, call) => sum + (call.duration || 0),
+            (sum, call) => sum + this.computeDurationInSeconds(call),
             0
         );
 
@@ -72,7 +93,10 @@ export class StatsService {
             (c) => c.zenchefReservationId
         ).length;
 
-        const calculateChangePct = (current: number, previous: number): number => {
+        const calculateChangePct = (
+            current: number,
+            previous: number
+        ): number => {
             if (previous === 0) return current > 0 ? 100 : 0;
             return Math.round(((current - previous) / previous) * 100);
         };
@@ -80,7 +104,10 @@ export class StatsService {
         return new DashboardResponseModel({
             totalReservations: {
                 current: currentReservations,
-                changePct: calculateChangePct(currentReservations, lastReservations),
+                changePct: calculateChangePct(
+                    currentReservations,
+                    lastReservations
+                ),
             },
             totalCalls: {
                 current: currentCallCount,
@@ -92,7 +119,10 @@ export class StatsService {
             },
             managerEscalations: {
                 current: currentEscalations,
-                changePct: calculateChangePct(currentEscalations, lastEscalations),
+                changePct: calculateChangePct(
+                    currentEscalations,
+                    lastEscalations
+                ),
             },
         });
     }
@@ -104,7 +134,9 @@ export class StatsService {
         this.logger.log("Fetching operations overview");
 
         const now = new Date();
-        const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        const thirtyDaysAgo = new Date(
+            now.getTime() - 30 * 24 * 60 * 60 * 1000
+        );
 
         // Get operation logs from last 30 days
         const logs = await this.databaseService.operationLog.findMany({
@@ -153,8 +185,8 @@ export class StatsService {
             }
         });
 
-        const data = Array.from(dataByDate.values()).sort(
-            (a, b) => a.date.localeCompare(b.date)
+        const data = Array.from(dataByDate.values()).sort((a, b) =>
+            a.date.localeCompare(b.date)
         );
 
         return new OperationsOverviewResponseModel(data);
@@ -167,7 +199,9 @@ export class StatsService {
         this.logger.log("Fetching call duration trend");
 
         const now = new Date();
-        const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        const thirtyDaysAgo = new Date(
+            now.getTime() - 30 * 24 * 60 * 60 * 1000
+        );
 
         const calls = await this.databaseService.call.findMany({
             where: {
@@ -178,7 +212,10 @@ export class StatsService {
         });
 
         // Group by date
-        const dataByDate = new Map<string, { totalDuration: number; callCount: number }>();
+        const dataByDate = new Map<
+            string,
+            { totalDuration: number; callCount: number }
+        >();
 
         for (let i = 0; i < 30; i++) {
             const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
@@ -190,7 +227,9 @@ export class StatsService {
             const dateStr = call.startTime.toISOString().split("T")[0];
             const existing = dataByDate.get(dateStr);
             if (existing) {
-                existing.totalDuration += Math.round((call.duration || 0) / 60); // Convert to minutes
+                existing.totalDuration += Math.round(
+                    this.computeDurationInSeconds(call) / 60
+                ); // Convert to minutes
                 existing.callCount += 1;
             }
         });
@@ -216,12 +255,13 @@ export class StatsService {
         this.logger.log("Fetching language breakdown");
 
         const now = new Date();
-        const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        const thirtyDaysAgo = new Date(
+            now.getTime() - 30 * 24 * 60 * 60 * 1000
+        );
 
         const calls = await this.databaseService.call.findMany({
             where: {
                 startTime: { gte: thirtyDaysAgo },
-                language: { not: null },
             },
             orderBy: { startTime: "asc" },
         });
@@ -233,17 +273,25 @@ export class StatsService {
 
         calls.forEach((call) => {
             const dateStr = call.startTime.toISOString().split("T")[0];
-            const language = call.language || "Unknown";
 
-            // Update daily counts
-            if (!dateLanguageMap.has(dateStr)) {
-                dateLanguageMap.set(dateStr, new Map());
-            }
-            const languageMap = dateLanguageMap.get(dateStr)!;
-            languageMap.set(language, (languageMap.get(language) || 0) + 1);
+            // Split comma-separated languages and process each one
+            const languages = call.languages
+                .split(",")
+                .map((lang) => lang.trim())
+                .filter((lang) => lang.length > 0);
 
-            // Update totals
-            totalByLanguage[language] = (totalByLanguage[language] || 0) + 1;
+            languages.forEach((language) => {
+                // Update daily counts
+                if (!dateLanguageMap.has(dateStr)) {
+                    dateLanguageMap.set(dateStr, new Map());
+                }
+                const languageMap = dateLanguageMap.get(dateStr)!;
+                languageMap.set(language, (languageMap.get(language) || 0) + 1);
+
+                // Update totals
+                totalByLanguage[language] =
+                    (totalByLanguage[language] || 0) + 1;
+            });
         });
 
         // Convert to data points
@@ -264,4 +312,3 @@ export class StatsService {
         return new LanguageBreakdownResponseModel(dataPoints, totalByLanguage);
     }
 }
-

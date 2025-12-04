@@ -53,9 +53,6 @@ export class CallDetailModel {
     endTime: Date | undefined;
 
     @ApiPropertyOptional()
-    duration: number | undefined; // in seconds
-
-    @ApiPropertyOptional()
     transcript: string | undefined;
 
     @ApiPropertyOptional()
@@ -89,9 +86,8 @@ export class CallDetailModel {
         this.status = call.status;
         this.startTime = call.startTime;
         this.endTime = call.endTime ?? undefined;
-        this.duration = call.duration ?? undefined;
-        this.transcript = call.transcript ?? undefined;
-        this.language = call.language ?? undefined;
+        this.transcript = undefined; // Transcript is built from CallTranscript records
+        this.language = call.languages ?? undefined;
         this.escalationRequested = call.escalationRequested;
         this.zenchefReservationId = call.zenchefReservationId ?? undefined;
         this.customer = call.customer

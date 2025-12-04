@@ -5,9 +5,10 @@ export interface CallListItem {
     id: string;
     status: CallStatus;
     startTime: Date;
-    duration: number | undefined;
+    endTime: Date | undefined;
     language: string | undefined;
     escalationRequested: boolean;
+    customerId: string | undefined;
     customerName: string | undefined;
     restaurantName: string;
     restaurantId: string;
@@ -18,7 +19,6 @@ export interface CallDetail {
     status: CallStatus;
     startTime: Date;
     endTime: Date | undefined;
-    duration: number | undefined;
     transcript: string | undefined;
     language: string | undefined;
     escalationRequested: boolean;
@@ -26,7 +26,7 @@ export interface CallDetail {
     customer:
         | {
               id: string;
-              name: string;
+              name: string | undefined;
               email: string | undefined;
               phone: string | undefined;
           }
@@ -95,4 +95,3 @@ export const useCallsStore = create<CallsState>()((set) => ({
             filters: { ...state.filters, ...pagination },
         })),
 }));
-

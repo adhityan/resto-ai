@@ -153,18 +153,22 @@ model Customer {
   @@index([restaurantId, name])
 }
 
-model Call {
-  id                  String     @id @default(uuid())
-  status              CallStatus @default(ACTIVE)
-  startTime           DateTime   @default(now())
-  endTime             DateTime?
-  duration            Int? // in seconds
-  transcript          String?
-  language            String?
-  escalationRequested Boolean    @default(false)
+enum Speaker {
+  USER
+  AGENT
+}
 
-  customerId           String?
-  customer             Customer?  @relation(fields: [customerId], references: [id])
+model Call {
+  id     String     @id @default(uuid())
+  status CallStatus @default(ACTIVE)
+
+  startTime           DateTime  @default(now())
+  endTime             DateTime?
+  languages           String // Comma separated list of detected languages (e.g. "en,fr")
+  escalationRequested Boolean   @default(false)
+
+  customerId           String
+  customer             Customer   @relation(fields: [customerId], references: [id])
   restaurantId         String
   restaurant           Restaurant @relation(fields: [restaurantId], references: [id])
   zenchefReservationId String? // External Zenchef booking ID
@@ -172,10 +176,25 @@ model Call {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  transcripts CallTranscript[]
+
   @@index([restaurantId])
   @@index([customerId])
   @@index([status])
   @@index([startTime])
+}
+
+model CallTranscript {
+  id       String   @id @default(uuid())
+  speaker  Speaker
+  contents String
+  time     DateTime @default(now())
+
+  callId String
+  call   Call   @relation(fields: [callId], references: [id], onDelete: Cascade)
+
+  @@index([callId])
+  @@index([callId, time])
 }
 
 model Reservation {

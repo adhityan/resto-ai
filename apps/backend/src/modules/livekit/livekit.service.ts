@@ -54,7 +54,7 @@ export class LivekitService {
                     agentName: "resto-ai",
                     metadata: JSON.stringify({
                         calledPhoneNumber: restaurant.incomingPhoneNumber,
-                        callerPhoneNumber: "+31600000000",
+                        callerPhoneNumber: "+33753546003",
                     }),
                 }),
             ],
@@ -69,4 +69,3 @@ export class LivekitService {
         };
     }
 }
-

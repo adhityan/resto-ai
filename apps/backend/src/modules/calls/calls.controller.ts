@@ -1,10 +1,27 @@
-import { Controller, Get, Inject, Param, Query } from "@nestjs/common";
-import { ApiOkResponse, ApiQuery, ApiTags } from "@nestjs/swagger";
+import {
+    Body,
+    Controller,
+    Get,
+    Inject,
+    Param,
+    Post,
+    Query,
+} from "@nestjs/common";
+import {
+    ApiCreatedResponse,
+    ApiOkResponse,
+    ApiQuery,
+    ApiTags,
+} from "@nestjs/swagger";
 import { CallStatus } from "@repo/database";
-import { CallListResponseModel, CallDetailModel } from "@repo/contracts";
+import {
+    CallListResponseModel,
+    CallDetailModel,
+    CreateCallModel,
+} from "@repo/contracts";
 
 import { CallsService } from "./calls.service";
-import { OnlyAdmin } from "../../decorators/user-api.decorator";
+import { OnlyAdmin, OnlyApp } from "../../decorators/user-api.decorator";
 import { CallNotFoundError } from "../../errors/call-not-found.error";
 
 @ApiTags("calls")
@@ -16,7 +33,11 @@ export class CallsController {
     @OnlyAdmin()
     @Get()
     @ApiOkResponse({ type: CallListResponseModel })
-    @ApiQuery({ name: "status", required: false, description: "Comma-separated statuses" })
+    @ApiQuery({
+        name: "status",
+        required: false,
+        description: "Comma-separated statuses",
+    })
     @ApiQuery({ name: "restaurantId", required: false })
     @ApiQuery({ name: "startDate", required: false })
     @ApiQuery({ name: "endDate", required: false })
@@ -60,5 +81,11 @@ export class CallsController {
         if (!call) throw new CallNotFoundError(id);
         return call;
     }
-}
 
+    @OnlyApp()
+    @Post()
+    @ApiCreatedResponse({ type: CallDetailModel })
+    async createCall(@Body() body: CreateCallModel): Promise<CallDetailModel> {
+        return this.callsService.createCall(body);
+    }
+}

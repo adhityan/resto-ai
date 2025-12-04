@@ -12,13 +12,16 @@ export class CallListItemModel {
     startTime: Date;
 
     @ApiPropertyOptional()
-    duration: number | undefined; // in seconds
+    endTime: Date | undefined;
 
     @ApiPropertyOptional()
     language: string | undefined;
 
     @ApiProperty()
     escalationRequested: boolean;
+
+    @ApiPropertyOptional()
+    customerId: string | undefined;
 
     @ApiPropertyOptional()
     customerName: string | undefined;
@@ -31,16 +34,17 @@ export class CallListItemModel {
 
     constructor(
         call: Call & {
-            customer?: { name: string | null } | null;
+            customer?: { id: string; name: string | null } | null;
             restaurant: { name: string };
         }
     ) {
         this.id = call.id;
         this.status = call.status;
         this.startTime = call.startTime;
-        this.duration = call.duration ?? undefined;
-        this.language = call.language ?? undefined;
+        this.endTime = call.endTime ?? undefined;
+        this.language = call.languages ?? undefined;
         this.escalationRequested = call.escalationRequested;
+        this.customerId = call.customer?.id ?? undefined;
         this.customerName = call.customer?.name ?? undefined;
         this.restaurantName = call.restaurant.name;
         this.restaurantId = call.restaurantId;
