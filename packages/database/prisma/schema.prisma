@@ -47,11 +47,13 @@ enum OperationType {
 }
 
 model Restaurant {
-  id                   String  @id @default(uuid())
-  name                 String
-  isActive             Boolean @default(true)
-  incomingPhoneNumber  String
-  maxEscalationSeating Int     @default(12)
+  id                                String  @id @default(uuid())
+  name                              String
+  information                       String  @default("")
+  website                           String
+  isActive                          Boolean @default(true)
+  incomingPhoneNumber               String
+  maxSeatingAllowedBeforeEscalation Int     @default(12)
 
   zenchefId String @unique
   apiToken  String @unique

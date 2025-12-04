@@ -90,6 +90,7 @@ COPY --from=package-builder /repo/packages/database/generated/prisma /repo/packa
 COPY --from=package-builder /repo/packages/database/prisma/schema.prisma /repo/packages/database/prisma/schema.prisma
 COPY --from=package-builder /repo/packages/database/prisma/migrations /repo/packages/database/prisma/migrations
 COPY --from=package-builder /repo/packages/database/prisma/seed.ts /repo/packages/database/prisma/seed.ts
+COPY --from=package-builder /repo/packages/database/prisma/miri-mary.md /repo/packages/database/prisma/miri-mary.md
 COPY --from=package-builder /repo/packages/database/prisma.config.ts /repo/packages/database/prisma.config.ts
 COPY --from=package-builder /repo/packages/database/package.json /repo/packages/database/package.json
 COPY --from=package-builder /repo/packages/contracts/dist /repo/packages/contracts/dist

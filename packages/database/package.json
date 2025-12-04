@@ -11,7 +11,7 @@
         "dev": "tsc -b --watch",
         "db:format": "prisma format",
         "db:generate": "prisma generate",
-        "db:migrate": "prisma migrate dev --skip-generate",
+        "db:migrate": "prisma migrate dev",
         "db:reset": "prisma migrate reset --force",
         "db:deploy": "prisma migrate deploy",
         "db:seed": "prisma db seed"

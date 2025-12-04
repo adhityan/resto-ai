@@ -1,5 +1,9 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
-import { DatabaseService, Restaurant, RestaurantAuthentication } from "@repo/database";
+import {
+    DatabaseService,
+    Restaurant,
+    RestaurantAuthentication,
+} from "@repo/database";
 import { CryptoUtils } from "@repo/utils";
 import { ZenchefService } from "../zenchef/zenchef.service";
 import { RestaurantNotFoundError } from "../../errors/restaurant-not-found.error";
@@ -19,7 +23,9 @@ export class RestaurantService {
         name: string,
         incomingPhoneNumber: string,
         zenchefId: string,
-        apiToken: string
+        apiToken: string,
+        website: string,
+        information?: string
     ): Promise<Restaurant> {
         this.logger.log(`Creating restaurant: ${name}`);
 
@@ -36,6 +42,8 @@ export class RestaurantService {
                     data: {
                         name,
                         incomingPhoneNumber,
+                        website,
+                        information,
                         isActive: true,
                         zenchefId,
                         apiToken,
@@ -184,7 +192,9 @@ export class RestaurantService {
     public async createAuthentication(
         restaurantId: string
     ): Promise<{ id: string; clientId: string; clientSecret: string }> {
-        this.logger.log(`Creating authentication for restaurant: ${restaurantId}`);
+        this.logger.log(
+            `Creating authentication for restaurant: ${restaurantId}`
+        );
 
         const restaurant = await this.findRestaurantById(restaurantId);
         if (!restaurant) {
@@ -201,14 +211,16 @@ export class RestaurantService {
             BCRYPT_SALT_ROUNDS
         );
 
-        const auth = await this.databaseService.restaurantAuthentication.create({
-            data: {
-                clientId,
-                clientSecret: hashedSecret,
-                restaurantId,
-                isActive: true,
-            },
-        });
+        const auth = await this.databaseService.restaurantAuthentication.create(
+            {
+                data: {
+                    clientId,
+                    clientSecret: hashedSecret,
+                    restaurantId,
+                    isActive: true,
+                },
+            }
+        );
 
         // Return the plain secret - this is the only time it will be available
         return {

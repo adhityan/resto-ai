@@ -1,5 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsNotEmpty, IsString, MaxLength } from "class-validator";
+import { IsNotEmpty, IsOptional, IsString, MaxLength } from "class-validator";
 
 export class CreateRestaurantModel {
     @ApiProperty()
@@ -9,6 +9,16 @@ export class CreateRestaurantModel {
         message: "Restaurant name must be less than 100 characters",
     })
     name: string;
+
+    @ApiProperty({ required: false })
+    @IsOptional()
+    @IsString()
+    information?: string;
+
+    @ApiProperty()
+    @IsNotEmpty()
+    @IsString()
+    website: string;
 
     @ApiProperty()
     @IsNotEmpty()

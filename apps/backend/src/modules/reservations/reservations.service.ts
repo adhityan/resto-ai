@@ -117,7 +117,7 @@ export class ReservationsService {
     private async getRestaurantCredentials(restaurantId: string): Promise<{
         zenchefId: string;
         apiToken: string;
-        maxEscalationSeating: number;
+        maxSeatingAllowedBeforeEscalation: number;
     }> {
         const restaurant =
             await this.restaurantService.findRestaurantById(restaurantId);
@@ -135,7 +135,7 @@ export class ReservationsService {
         return {
             zenchefId: restaurant.zenchefId,
             apiToken: restaurant.apiToken,
-            maxEscalationSeating: restaurant.maxEscalationSeating,
+            maxSeatingAllowedBeforeEscalation: restaurant.maxSeatingAllowedBeforeEscalation,
         };
     }
 
@@ -157,22 +157,22 @@ export class ReservationsService {
             `Checking availability for restaurant "${restaurantId}" on "${date}" for "${numberOfPeople}" people${time ? ` at "${time}"` : ""}`
         );
 
-        const { zenchefId, apiToken, maxEscalationSeating } =
+        const { zenchefId, apiToken, maxSeatingAllowedBeforeEscalation } =
             await this.getRestaurantCredentials(restaurantId);
 
         // Check if party size requires manager escalation
-        if (numberOfPeople >= maxEscalationSeating) {
+        if (numberOfPeople >= maxSeatingAllowedBeforeEscalation) {
             this.logger.log(
-                `Party size ${numberOfPeople} >= ${maxEscalationSeating}, requires manager escalation`
+                `Party size ${numberOfPeople} >= ${maxSeatingAllowedBeforeEscalation}, requires manager escalation`
             );
 
             const description =
                 `RESERVATION REQUIRES MANAGER CONTACT\n\n` +
                 `Party Size: ${numberOfPeople} guests\n` +
                 `Requested Date: ${date}${time ? ` at ${time}` : ""}\n\n` +
-                `IMPORTANT: Reservations for ${maxEscalationSeating} or more guests cannot be made through the automated system. ` +
+                `IMPORTANT: Reservations for ${maxSeatingAllowedBeforeEscalation} or more guests cannot be made through the automated system. ` +
                 `The customer must contact the restaurant manager directly to arrange this reservation.\n\n` +
-                `Please inform the customer that they need to speak with a manager for large party bookings (${maxEscalationSeating}+ guests). ` +
+                `Please inform the customer that they need to speak with a manager for large party bookings (${maxSeatingAllowedBeforeEscalation}+ guests). ` +
                 `The manager will be able to accommodate their needs and discuss special arrangements for larger groups.`;
 
             return new AvailabilityResponseModel({
@@ -184,7 +184,7 @@ export class ReservationsService {
             });
         }
 
-        // Fetch seating areas from database and filter by maxEscalationSeating
+        // Fetch seating areas from database and filter by maxSeatingAllowedBeforeEscalation
         const allSeatingAreas =
             await this.restaurantService.getSeatingAreasByRestaurantId(
                 restaurantId

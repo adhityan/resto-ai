@@ -9,6 +9,12 @@ export class RestaurantModel {
     name: string;
 
     @ApiProperty()
+    information: string;
+
+    @ApiProperty()
+    website: string;
+
+    @ApiProperty()
     isActive: boolean;
 
     @ApiProperty()
@@ -23,6 +29,8 @@ export class RestaurantModel {
     constructor(restaurant: Restaurant) {
         this.id = restaurant.id;
         this.name = restaurant.name;
+        this.information = restaurant.information;
+        this.website = restaurant.website;
         this.isActive = restaurant.isActive;
         this.restaurantPhoneNumber = restaurant.incomingPhoneNumber;
         this.createdAt = restaurant.createdAt;

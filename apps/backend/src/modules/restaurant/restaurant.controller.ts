@@ -7,6 +7,8 @@ import {
     Param,
     Patch,
     Post,
+    Req,
+    UnauthorizedException,
 } from "@nestjs/common";
 import { ApiCreatedResponse, ApiOkResponse, ApiTags } from "@nestjs/swagger";
 import {
@@ -18,8 +20,9 @@ import {
 } from "@repo/contracts";
 
 import { RestaurantService } from "./restaurant.service";
-import { OnlyAdmin } from "../../decorators/user-api.decorator";
+import { OnlyAdmin, OnlyApp } from "../../decorators/user-api.decorator";
 import { RestaurantNotFoundError } from "../../errors/restaurant-not-found.error";
+import { AuthenticatedRequest } from "src/types/request";
 
 @ApiTags("restaurants")
 @Controller("restaurants")
@@ -50,6 +53,23 @@ export class RestaurantController {
         return new RestaurantModel(restaurant);
     }
 
+    @OnlyApp()
+    @Get("me")
+    @ApiOkResponse({
+        type: RestaurantModel,
+    })
+    public async getMyRestaurant(
+        @Req() req: AuthenticatedRequest
+    ): Promise<RestaurantModel> {
+        const restaurantId = req.loginPayload.restaurantId;
+        if (!restaurantId) throw new UnauthorizedException();
+
+        const restaurant =
+            await this.restaurantService.findRestaurantById(restaurantId);
+        if (!restaurant) throw new RestaurantNotFoundError(restaurantId);
+        return new RestaurantModel(restaurant);
+    }
+
     @OnlyAdmin()
     @Post()
     @ApiCreatedResponse({
@@ -62,7 +82,9 @@ export class RestaurantController {
             body.name,
             body.incomingPhoneNumber,
             body.zenchefId,
-            body.apiToken
+            body.apiToken,
+            body.website,
+            body.information
         );
         return new RestaurantModel(restaurant);
     }

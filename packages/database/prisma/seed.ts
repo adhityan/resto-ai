@@ -1,7 +1,13 @@
 import "dotenv/config";
+import { readFileSync } from "node:fs";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import { PrismaClient, UserType } from "../generated/prisma/client";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import { CryptoUtils } from "@repo/utils";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const adapter = new PrismaBetterSqlite3({
     url: process.env.DATABASE_URL!,
@@ -48,12 +54,19 @@ async function main() {
     const zenchefId = "378114";
     const apiToken = "e3469030-41fc-4ec3-8754-10f333fde782";
 
+    // Read restaurant information from markdown file
+    const miriMaryInfoPath = join(__dirname, "miri-mary.md");
+    const restaurantInformation = readFileSync(miriMaryInfoPath, "utf-8");
+    console.log(`Loaded restaurant information from ${miriMaryInfoPath}`);
+
     const restaurant = await prisma.restaurant.upsert({
         where: { id },
         update: {},
         create: {
             id,
             name: restaurantName,
+            information: restaurantInformation,
+            website: "https://mirimary.com",
             incomingPhoneNumber: restaurantPhone,
             zenchefId,
             apiToken,
