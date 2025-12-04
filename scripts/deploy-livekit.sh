@@ -44,6 +44,18 @@ else
   echo "Warning: Google Credentials file not found at $GOOGLE_CREDS_PATH"
 fi
 
+# Update RESTO_API_URL in .env to point to production
+if [ -f "out/full/.env" ]; then
+  echo "Updating RESTO_API_URL..."
+  if grep -q "RESTO_API_URL" out/full/.env; then
+    # Replace existing line
+    sed -i '' 's|RESTO_API_URL=.*|RESTO_API_URL=https://resto-ai.adhityan.com|g' out/full/.env
+  else
+    # Append if not exists
+    echo "RESTO_API_URL=https://resto-ai.adhityan.com" >> out/full/.env
+  fi
+fi
+
 # Hack: Add @livekit/agents dependency to the root package.json in out/full
 # This is required because 'lk agent deploy' checks for this dependency in the current directory
 echo "Patching root package.json..."

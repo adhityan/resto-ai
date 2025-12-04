@@ -14,6 +14,7 @@ import {
 import { CacheUtil, normalizePhoneNumber } from "@repo/utils";
 import { ZenchefService } from "../zenchef/zenchef.service";
 import { RestaurantService } from "../restaurant/restaurant.service";
+import { CustomerService } from "../customer/customer.service";
 import { GeneralError, RestaurantNotFoundError } from "../../errors";
 
 /**
@@ -28,7 +29,8 @@ export class ReservationsService {
     constructor(
         private readonly zenchefService: ZenchefService,
         private readonly restaurantService: RestaurantService,
-        private readonly databaseService: DatabaseService
+        private readonly databaseService: DatabaseService,
+        private readonly customerService: CustomerService
     ) {
         // Initialize cache with 24 hour TTL
         this.bookingIdCache = new CacheUtil<Set<string>>(86400);
@@ -69,8 +71,19 @@ export class ReservationsService {
             comments?: string;
             allergies?: string;
             seatingAreaName?: string;
+            callId?: string;
         }
     ): Promise<Reservation> {
+        // If callId is provided, validate that the call exists
+        if (data.callId) {
+            const call = await this.databaseService.call.findUnique({
+                where: { id: data.callId },
+            });
+            if (!call) {
+                throw new GeneralError(`Call with id ${data.callId} not found`);
+            }
+        }
+
         return this.databaseService.reservation.upsert({
             where: {
                 restaurantId_zenchefBookingId: {
@@ -91,6 +104,7 @@ export class ReservationsService {
                 comments: data.comments,
                 allergies: data.allergies,
                 seatingAreaName: data.seatingAreaName,
+                ...(data.callId && { callId: data.callId }),
             },
             create: {
                 restaurantId,
@@ -107,6 +121,7 @@ export class ReservationsService {
                 comments: data.comments,
                 allergies: data.allergies,
                 seatingAreaName: data.seatingAreaName,
+                ...(data.callId && { callId: data.callId }),
             },
         });
     }
@@ -135,7 +150,8 @@ export class ReservationsService {
         return {
             zenchefId: restaurant.zenchefId,
             apiToken: restaurant.apiToken,
-            maxSeatingAllowedBeforeEscalation: restaurant.maxSeatingAllowedBeforeEscalation,
+            maxSeatingAllowedBeforeEscalation:
+                restaurant.maxSeatingAllowedBeforeEscalation,
         };
     }
 
@@ -491,6 +507,7 @@ export class ReservationsService {
      * @param email - Optional customer email
      * @param roomId - Optional seating area ID
      * @param allergies - Optional allergies or dietary restrictions
+     * @param callId - Optional call ID to associate with the reservation
      * @returns Complete booking object with booking ID and human-readable description
      */
     async createReservation(
@@ -503,14 +520,22 @@ export class ReservationsService {
         comments?: string,
         email?: string,
         roomId?: string,
-        allergies?: string
+        allergies?: string,
+        callId?: string
     ): Promise<BookingObjectModel> {
         // Normalize phone number
         const normalizedPhone = normalizePhoneNumber(phone);
 
         this.logger.log(
-            `For restaurant "${restaurantId}", creating reservation for "${numberOfCustomers}" people on "${date}" at "${time}" with name "${name}" and phone "${normalizedPhone}" (original: "${phone}"). Optional comments: "${comments}". Optional email: "${email}". Optional roomId: "${roomId}". Optional allergies: "${allergies}".`
+            `For restaurant "${restaurantId}", creating reservation for "${numberOfCustomers}" people on "${date}" at "${time}" with name "${name}" and phone "${normalizedPhone}" (original: "${phone}"). Optional comments: "${comments}". Optional email: "${email}". Optional roomId: "${roomId}". Optional allergies: "${allergies}". Optional callId: "${callId}".`
         );
+
+        // Upsert customer (phone is the unique identifier)
+        await this.customerService.upsertCustomer(restaurantId, {
+            phone: normalizedPhone,
+            name,
+            email,
+        });
 
         const { zenchefId, apiToken } =
             await this.getRestaurantCredentials(restaurantId);
@@ -553,6 +578,7 @@ export class ReservationsService {
             comments: booking.comments,
             allergies: allergies,
             seatingAreaName: booking.seatingAreaName,
+            callId,
         });
 
         this.logger.log(

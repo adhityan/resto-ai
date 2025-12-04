@@ -99,4 +99,15 @@ export class CreateReservationRequestModel {
     @Transform(({ value }) => (value === "" ? undefined : value))
     @IsString()
     allergies?: string;
+
+    @ApiProperty({
+        description:
+            "Call ID to associate this reservation with (must be an existing call)",
+        example: "uuid-here",
+        required: false,
+    })
+    @IsOptional()
+    @Transform(({ value }) => (value === "" ? undefined : value))
+    @IsString()
+    callId?: string;
 }

@@ -35,7 +35,6 @@ import { ReservationStatus } from "@repo/database";
 import { ReservationsService } from "./reservations.service";
 import { OnlyAdmin, OnlyApp } from "../../decorators/user-api.decorator";
 import { AuthenticatedRequest } from "../../types/request";
-import { CustomerService } from "../customer/customer.service";
 
 /**
  * Controller for managing restaurant reservations via Zenchef API
@@ -45,9 +44,6 @@ import { CustomerService } from "../customer/customer.service";
 export class ReservationsController {
     @Inject()
     private readonly reservationsService: ReservationsService;
-
-    @Inject()
-    private readonly customerService: CustomerService;
 
     /**
      * Check table availability for a specific date, time, and party size
@@ -109,13 +105,6 @@ export class ReservationsController {
     ): Promise<BookingObjectModel> {
         const restaurantId = req.loginPayload.userId;
 
-        // Upsert customer (phone is the unique identifier)
-        await this.customerService.upsertCustomer(restaurantId, {
-            phone: body.phone,
-            name: body.name,
-            email: body.email,
-        });
-
         return this.reservationsService.createReservation(
             restaurantId,
             body.numberOfCustomers,
@@ -126,7 +115,8 @@ export class ReservationsController {
             body.comments,
             body.email,
             body.roomId,
-            body.allergies
+            body.allergies,
+            body.callId
         );
     }
 
@@ -272,8 +262,8 @@ export class ReservationsController {
             restaurantId,
             date,
             statusList,
-            skip ? parseInt(skip, 10) : 0,
-            take ? parseInt(take, 10) : 50
+            skip ? Number.parseInt(skip, 10) : 0,
+            take ? Number.parseInt(take, 10) : 50
         );
 
         return new AdminReservationListResponseModel(

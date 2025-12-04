@@ -167,11 +167,12 @@ model Call {
   languages           String // Comma separated list of detected languages (e.g. "en,fr")
   escalationRequested Boolean   @default(false)
 
-  customerId           String
-  customer             Customer   @relation(fields: [customerId], references: [id])
-  restaurantId         String
-  restaurant           Restaurant @relation(fields: [restaurantId], references: [id])
-  zenchefReservationId String? // External Zenchef booking ID
+  customerId   String
+  customer     Customer   @relation(fields: [customerId], references: [id])
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
+
+  reservations Reservation[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -216,6 +217,9 @@ model Reservation {
 
   restaurantId String
   restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
+
+  callId String?
+  call   Call?   @relation(fields: [callId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
