@@ -14,22 +14,20 @@ import * as livekit from "@livekit/agents-plugin-livekit";
 import * as gemini from "@livekit/agents-plugin-google";
 import * as silero from "@livekit/agents-plugin-silero";
 import { fileURLToPath } from "node:url";
+import { AxiosInstance } from "axios";
 import "dotenv/config";
 
-import { createToken } from "./utils/token.js";
+import { createApiClient, getErrorMessage } from "./utils/http.js";
 import { RestaurantStandardAgent } from "./agents/restaurantStandard.js";
 import { endCall, getFieldFromContext } from "./utils/call.js";
 import { getRestaurantByPhone } from "./utils/restaurant.js";
-import { createApiClient } from "./utils/http.js";
 import { CallModel, CustomerModel } from "@repo/contracts";
-import { AxiosInstance } from "axios";
-import { Speaker } from "@repo/database";
-import { CallTranscriptModel } from "../../../packages/database/dist/generated/prisma/models.js";
+import { Speaker, CallTranscript } from "@repo/database";
 
-if (process.argv.includes("dev")) {
-    const token = await createToken("test-room", "user_123");
-    console.log("Token: ", token);
-}
+// if (process.argv.includes("dev")) {
+//     const token = await createToken("test-room", "user_123");
+//     console.log("Token: ", token);
+// }
 
 function createSession(ctx: JobContext) {
     return new voice.AgentSession({
@@ -99,26 +97,16 @@ async function createCallInDatabase(
     return data;
 }
 
-async function endCallInDatabase(
+function setupSessionListeners(
     session: voice.AgentSession,
     client: AxiosInstance,
     callId: string
 ) {
-    session.on(voice.AgentSessionEventTypes.Close, async () => {
-        await client.post<CallModel>(`/calls/${callId}/end`, {
-            languages: ["en"],
-        });
-    });
-}
-
-async function addCallTranscriptToDatabase(
-    session: voice.AgentSession,
-    client: AxiosInstance,
-    callId: string
-) {
-    session.on(
-        voice.AgentSessionEventTypes.ConversationItemAdded,
-        async (ev) => {
+    // Transcript listener - handles multiple events per session
+    const transcriptListener = async (ev: {
+        item: { textContent?: string; role: string; interrupted?: boolean };
+    }) => {
+        try {
             const contents = ev.item.textContent;
             if (!contents) return;
 
@@ -126,16 +114,37 @@ async function addCallTranscriptToDatabase(
                 ev.item.role === "user" ? Speaker.USER : Speaker.AGENT;
             const wasInterupted = ev.item.interrupted;
 
-            await client.post<CallTranscriptModel>(
-                `/calls/${callId}/transcript`,
-                {
-                    speaker,
-                    contents,
-                    wasInterupted,
-                }
+            await client.post<CallTranscript>(`/calls/${callId}/transcript`, {
+                speaker,
+                contents,
+                wasInterupted,
+            });
+        } catch (error) {
+            console.error(
+                `Failed to save transcript: ${getErrorMessage(error)}`
             );
         }
+    };
+    session.on(
+        voice.AgentSessionEventTypes.ConversationItemAdded,
+        transcriptListener
     );
+
+    // Cleanup on close - fires once, removes transcript listener
+    session.once(voice.AgentSessionEventTypes.Close, async () => {
+        session.off(
+            voice.AgentSessionEventTypes.ConversationItemAdded,
+            transcriptListener
+        );
+
+        try {
+            await client.post<CallModel>(`/calls/${callId}/end`, {
+                languages: ["en"],
+            });
+        } catch (error) {
+            console.error(`Failed to end call: ${getErrorMessage(error)}`);
+        }
+    });
 }
 
 export default defineAgent({
@@ -185,13 +194,12 @@ export default defineAgent({
         const session = createSession(ctx);
 
         createUsageCollector(ctx, session);
-        endCallInDatabase(session, client, call.id);
-        addCallTranscriptToDatabase(session, client, call.id);
+        setupSessionListeners(session, client, call.id);
 
         // Start the session with the restaurant standard agent
         await session.start({
             agent: new RestaurantStandardAgent({
-                restaurantApiKey: restaurantDetails.apiKey,
+                client,
                 customer,
             }),
             room: ctx.room,

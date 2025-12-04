@@ -48,14 +48,15 @@ export class StatsService {
         );
         const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
 
-        // Get current month calls
+        // Get current month calls with reservations
         const currentMonthCalls = await this.databaseService.call.findMany({
             where: {
                 startTime: { gte: startOfCurrentMonth },
             },
+            include: { reservations: true },
         });
 
-        // Get last month calls
+        // Get last month calls with reservations
         const lastMonthCalls = await this.databaseService.call.findMany({
             where: {
                 startTime: {
@@ -63,6 +64,7 @@ export class StatsService {
                     lte: endOfLastMonth,
                 },
             },
+            include: { reservations: true },
         });
 
         // Calculate stats
@@ -85,13 +87,15 @@ export class StatsService {
             (c) => c.escalationRequested
         ).length;
 
-        // Count reservations (calls with zenchefReservationId)
-        const currentReservations = currentMonthCalls.filter(
-            (c) => c.zenchefReservationId
-        ).length;
-        const lastReservations = lastMonthCalls.filter(
-            (c) => c.zenchefReservationId
-        ).length;
+        // Count total reservations across all calls
+        const currentReservations = currentMonthCalls.reduce(
+            (sum, c) => sum + c.reservations.length,
+            0
+        );
+        const lastReservations = lastMonthCalls.reduce(
+            (sum, c) => sum + c.reservations.length,
+            0
+        );
 
         const calculateChangePct = (
             current: number,

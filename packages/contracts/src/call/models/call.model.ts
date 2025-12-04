@@ -29,9 +29,6 @@ export class CallModel {
     @ApiProperty()
     restaurantId: string;
 
-    @ApiPropertyOptional()
-    zenchefReservationId: string | undefined;
-
     @ApiProperty()
     createdAt: Date;
 
@@ -52,7 +49,6 @@ export class CallModel {
         this.escalationRequested = call.escalationRequested;
         this.customerId = call.customerId;
         this.restaurantId = call.restaurantId;
-        this.zenchefReservationId = call.zenchefReservationId ?? undefined;
         this.createdAt = call.createdAt;
         this.updatedAt = call.updatedAt;
     }

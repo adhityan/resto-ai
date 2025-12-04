@@ -1,6 +1,5 @@
 import { voice } from "@livekit/agents";
 import { TemplateRenderer } from "@repo/utils";
-import { createApiClient } from "../utils/http.js";
 import { createCancelReservationTool } from "../tools/cancelReservation.js";
 import { createUpdateReservationTool } from "../tools/updateReservation.js";
 import { createMakeReservationTool } from "../tools/makeReservation.js";
@@ -8,7 +7,8 @@ import { createSearchReservationsTool } from "../tools/searchReservations.js";
 import { createCheckAvailabilityTool } from "../tools/checkAvailability.js";
 import { createGetRestaurantDetailTool } from "../tools/getRestaurantDetail.js";
 import { CustomerModel } from "@repo/contracts";
-import { describeCustomerKnowledge } from "src/utils/customer.js";
+import { describeCustomerKnowledge } from "../utils/customer.js";
+import type { AxiosInstance } from "axios";
 
 const AGENT_INSTRUCTIONS = `# Personality
 You are Saar, working at Miri Mary restaurant in Amsterdam's De Pijp neighborhood.
@@ -302,21 +302,17 @@ const GREETING_TEMPLATE = `Hey! You've got Miri Mary. This is Saar. How can I he
 export class RestaurantStandardAgent extends voice.Agent {
     private readonly renderer: TemplateRenderer;
 
-    constructor(options: {
-        restaurantApiKey: string;
-        customer: CustomerModel;
-    }) {
-        const { restaurantApiKey, customer } = options;
+    constructor(options: { client: AxiosInstance; customer: CustomerModel }) {
+        const { client, customer } = options;
 
-        // Parse metadata and create template renderer with all parameters
+        // Create template renderer with all parameters
         const renderer = new TemplateRenderer({
             now: new Date().toISOString(),
             callerPhoneNumber: customer.phone,
             describeCustomerKnowledge: describeCustomerKnowledge(customer),
         });
 
-        // Create axios client and tools
-        const client = createApiClient(restaurantApiKey);
+        // Create tools with provided client
         const tools = {
             makeReservation: createMakeReservationTool(client),
             cancelReservation: createCancelReservationTool(client),

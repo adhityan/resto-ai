@@ -61,9 +61,6 @@ export class CallDetailModel {
     @ApiProperty()
     escalationRequested: boolean;
 
-    @ApiPropertyOptional()
-    zenchefReservationId: string | undefined;
-
     @ApiPropertyOptional({ type: CallDetailCustomerModel })
     customer: CallDetailCustomerModel | undefined;
 
@@ -89,7 +86,6 @@ export class CallDetailModel {
         this.transcript = undefined; // Transcript is built from CallTranscript records
         this.language = call.languages ?? undefined;
         this.escalationRequested = call.escalationRequested;
-        this.zenchefReservationId = call.zenchefReservationId ?? undefined;
         this.customer = call.customer
             ? new CallDetailCustomerModel(call.customer)
             : undefined;

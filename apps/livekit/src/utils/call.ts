@@ -1,5 +1,5 @@
-import { RoomServiceClient } from "livekit-server-sdk";
 import { getJobContext, JobContext } from "@livekit/agents";
+import { getRoomServiceClient } from "./roomService.js";
 
 /**
  * Parses a JSON metadata string into a Record.
@@ -41,12 +41,7 @@ export async function endCall(context?: JobContext) {
         return;
     }
 
-    const roomServiceClient = new RoomServiceClient(
-        process.env.LIVEKIT_URL!,
-        process.env.LIVEKIT_API_KEY,
-        process.env.LIVEKIT_API_SECRET
-    );
-
+    const roomServiceClient = getRoomServiceClient();
     const roomName = jobContext.room.name ?? context?.job.room?.name;
     if (roomName) {
         console.log(`Hanging up call for room: ${roomName}...`);
