@@ -5,3 +5,4 @@ export * from "./customer";
 export * from "./reservation";
 export * from "./call";
 export * from "./stats";
+export * from "./livekit";

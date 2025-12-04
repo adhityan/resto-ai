@@ -1,6 +1,6 @@
 // Map of phone numbers to restaurant API keys
 const phoneToRestaurantKey: Record<string, string> = {
-    "+31612345678": "YWRoaXR5YW46ZnpMcThUTjRpcHNISnN2",
+    "+33753549003": "YWRoaXR5YW46ZnpMcThUTjRpcHNISnN2",
 };
 
 /**

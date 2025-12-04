@@ -1,7 +1,6 @@
 import { voice } from "@livekit/agents";
 import { TemplateRenderer } from "@repo/utils";
 import { createApiClient } from "../utils/http.js";
-import { parseMetadata } from "../utils/call.js";
 import { createCancelReservationTool } from "../tools/cancelReservation.js";
 import { createUpdateReservationTool } from "../tools/updateReservation.js";
 import { createMakeReservationTool } from "../tools/makeReservation.js";

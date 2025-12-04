@@ -21,6 +21,9 @@ export const API = {
     DELETE_RESTAURANT_AUTHENTICATION: (restaurantId: string, authId: string) =>
         `/restaurants/${restaurantId}/authentications/${authId}`,
 
+    // LiveKit
+    LIVEKIT_TOKEN: (restaurantId: string) => `/livekit/token/${restaurantId}`,
+
     // Customers
     CUSTOMERS: "/customers",
     CUSTOMER_DETAIL: (id: string) => `/customers/${id}`,

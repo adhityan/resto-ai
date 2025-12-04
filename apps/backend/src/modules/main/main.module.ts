@@ -17,6 +17,7 @@ import { ZenchefModule } from "../zenchef/zenchef.module";
 import { ReservationsModule } from "../reservations/reservations.module";
 import { StatsModule } from "../stats/stats.module";
 import { CallsModule } from "../calls/calls.module";
+import { LivekitModule } from "../livekit/livekit.module";
 
 @Module({
     imports: [
@@ -30,6 +31,7 @@ import { CallsModule } from "../calls/calls.module";
         ReservationsModule,
         StatsModule,
         CallsModule,
+        LivekitModule,
         DatabaseModule.forRoot(),
 
         TerminusModule,

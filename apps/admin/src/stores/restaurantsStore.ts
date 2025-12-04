@@ -3,6 +3,8 @@ import { create } from "zustand";
 export interface Restaurant {
     id: string;
     name: string;
+    information: string;
+    website: string;
     isActive: boolean;
     restaurantPhoneNumber: string;
     createdAt: Date;

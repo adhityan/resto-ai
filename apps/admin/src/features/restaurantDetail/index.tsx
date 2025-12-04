@@ -11,9 +11,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { TestAgentCard } from "./test-agent-card";
 
 export default function RestaurantDetailPage() {
     const router = useRouter();
@@ -33,6 +35,8 @@ export default function RestaurantDetailPage() {
     });
 
     const [restaurantName, setRestaurantName] = useState(restaurant?.name ?? "");
+    const [website, setWebsite] = useState(restaurant?.website ?? "");
+    const [information, setInformation] = useState(restaurant?.information ?? "");
     const [isActive, setIsActive] = useState(restaurant?.isActive ?? true);
     const [showSecretDialog, setShowSecretDialog] = useState(false);
     const [secretData, setSecretData] = useState<{ clientId: string; clientSecret: string } | null>(null);
@@ -47,14 +51,35 @@ export default function RestaurantDetailPage() {
     }, [restaurant?.name]);
 
     useEffect(() => {
+        if (restaurant && restaurant.website !== website) {
+            setWebsite(restaurant.website);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [restaurant?.website]);
+
+    useEffect(() => {
+        if (restaurant && restaurant.information !== information) {
+            setInformation(restaurant.information);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [restaurant?.information]);
+
+    useEffect(() => {
         if (restaurant && restaurant.isActive !== isActive) {
             setIsActive(restaurant.isActive);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [restaurant?.isActive]);
 
+    // Check if any field has changed
+    const hasChanges =
+        restaurantName !== (restaurant?.name ?? "") ||
+        website !== (restaurant?.website ?? "") ||
+        information !== (restaurant?.information ?? "") ||
+        isActive !== (restaurant?.isActive ?? true);
+
     const updateMutation = useMutation({
-        mutationFn: async (updates: { name?: string; isActive?: boolean }) => {
+        mutationFn: async (updates: { name?: string; website?: string; information?: string; isActive?: boolean }) => {
             await api.patch(API.RESTAURANT_DETAIL(restaurantId), updates);
         },
         onSuccess: () => {
@@ -66,6 +91,15 @@ export default function RestaurantDetailPage() {
             toast.error("Failed to update restaurant.");
         },
     });
+
+    const handleUpdate = () => {
+        updateMutation.mutate({
+            name: restaurantName,
+            website,
+            information,
+            isActive,
+        });
+    };
 
     const deleteAuthMutation = useMutation({
         mutationFn: async (authId: string) => {
@@ -140,23 +174,31 @@ export default function RestaurantDetailPage() {
                 <CardContent className="space-y-4">
                     <div className="space-y-2">
                         <Label htmlFor="restaurantName">Restaurant Name</Label>
-                        <div className="flex gap-2">
-                            <Input id="restaurantName" value={restaurantName} onChange={(e) => setRestaurantName(e.target.value)} />
-                            <Button onClick={() => updateMutation.mutate({ name: restaurantName })} disabled={restaurantName === restaurant.name}>
-                                Update
-                            </Button>
-                        </div>
+                        <Input id="restaurantName" value={restaurantName} onChange={(e) => setRestaurantName(e.target.value)} />
                     </div>
-                    <div className="flex items-center space-x-2">
-                        <Switch
-                            id="isActive"
-                            checked={isActive}
-                            onCheckedChange={(checked) => {
-                                setIsActive(checked);
-                                updateMutation.mutate({ isActive: checked });
-                            }}
+                    <div className="space-y-2">
+                        <Label htmlFor="website">Website</Label>
+                        <Input id="website" type="url" placeholder="https://example.com" value={website} onChange={(e) => setWebsite(e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="information">Instructions</Label>
+                        <Textarea
+                            id="information"
+                            placeholder="Special instructions for the AI agent..."
+                            value={information}
+                            onChange={(e) => setInformation(e.target.value)}
+                            rows={4}
+                            className="max-h-48 overflow-y-auto"
                         />
-                        <Label htmlFor="isActive">Active</Label>
+                    </div>
+                    <div className="flex items-center justify-between pt-2">
+                        <div className="flex items-center space-x-2">
+                            <Switch id="isActive" checked={isActive} onCheckedChange={setIsActive} />
+                            <Label htmlFor="isActive">Active</Label>
+                        </div>
+                        <Button onClick={handleUpdate} disabled={!hasChanges || updateMutation.isPending}>
+                            {updateMutation.isPending ? "Updating..." : "Update"}
+                        </Button>
                     </div>
                 </CardContent>
             </Card>
@@ -216,6 +258,9 @@ export default function RestaurantDetailPage() {
                     </Table>
                 </CardContent>
             </Card>
+
+            {/* Test Agent Card */}
+            <TestAgentCard restaurantId={restaurantId} />
 
             {/* Client Secret Dialog */}
             <Dialog open={showSecretDialog} onOpenChange={setShowSecretDialog}>
