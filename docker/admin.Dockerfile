@@ -59,7 +59,7 @@ RUN npm run build --workspace=@repo/contracts
 FROM base AS app-builder
 WORKDIR /app
 ENV VITE_BASE_URL=https://resto-ai.adhityan.com/api
-ENV VITE_LIVEKIT_URL=wss://p_3tjyy9yu2ap.eu.livekit.cloud
+ENV VITE_LIVEKIT_URL=wss://restoai-tt7nk4br.livekit.cloud
 
 RUN apk add --no-cache openssl libc6-compat
 

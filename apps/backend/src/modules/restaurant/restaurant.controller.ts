@@ -48,9 +48,10 @@ export class RestaurantController {
     public async getRestaurantById(
         @Param("id") id: string
     ): Promise<RestaurantModel> {
-        const restaurant = await this.restaurantService.findRestaurantById(id);
-        if (!restaurant) throw new RestaurantNotFoundError(id);
-        return new RestaurantModel(restaurant);
+        const result =
+            await this.restaurantService.findRestaurantByIdWithSeatingAreas(id);
+        if (!result) throw new RestaurantNotFoundError(id);
+        return new RestaurantModel(result.restaurant, result.seatingAreas);
     }
 
     @OnlyApp()

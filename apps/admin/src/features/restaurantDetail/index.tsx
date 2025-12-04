@@ -1,45 +1,89 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "@tanstack/react-router";
-import { IconArrowLeft, IconPlus, IconTrash, IconCopy, IconCheck } from "@tabler/icons-react";
+import {
+    IconArrowLeft,
+    IconPlus,
+    IconTrash,
+    IconCopy,
+    IconCheck,
+} from "@tabler/icons-react";
 import api from "@/api";
 import { API } from "@/api/routes";
-import { Restaurant, RestaurantAuthentication } from "@/stores/restaurantsStore";
+import {
+    Restaurant,
+    RestaurantAuthentication,
+} from "@/stores/restaurantsStore";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { TestAgentCard } from "./test-agent-card";
+import { SeatingInfoCard } from "./seating-info-card";
 
 export default function RestaurantDetailPage() {
     const router = useRouter();
-    const { restaurantId } = useParams({ strict: false }) as { restaurantId: string };
+    const { restaurantId } = useParams({ strict: false }) as {
+        restaurantId: string;
+    };
     const qc = useQueryClient();
 
     const { data: restaurant } = useQuery<Restaurant>({
         queryKey: ["restaurant", restaurantId],
-        queryFn: async () => (await api.get(API.RESTAURANT_DETAIL(restaurantId))).data,
+        queryFn: async () =>
+            (await api.get(API.RESTAURANT_DETAIL(restaurantId))).data,
         enabled: !!restaurantId,
     });
 
-    const { data: authentications = [] } = useQuery<RestaurantAuthentication[]>({
-        queryKey: ["authentications", restaurantId],
-        queryFn: async () => (await api.get(API.RESTAURANT_AUTHENTICATIONS(restaurantId))).data,
-        enabled: !!restaurantId,
-    });
+    const { data: authentications = [] } = useQuery<RestaurantAuthentication[]>(
+        {
+            queryKey: ["authentications", restaurantId],
+            queryFn: async () =>
+                (await api.get(API.RESTAURANT_AUTHENTICATIONS(restaurantId)))
+                    .data,
+            enabled: !!restaurantId,
+        }
+    );
 
-    const [restaurantName, setRestaurantName] = useState(restaurant?.name ?? "");
+    const [restaurantName, setRestaurantName] = useState(
+        restaurant?.name ?? ""
+    );
     const [website, setWebsite] = useState(restaurant?.website ?? "");
-    const [information, setInformation] = useState(restaurant?.information ?? "");
+    const [information, setInformation] = useState(
+        restaurant?.information ?? ""
+    );
     const [isActive, setIsActive] = useState(restaurant?.isActive ?? true);
     const [showSecretDialog, setShowSecretDialog] = useState(false);
-    const [secretData, setSecretData] = useState<{ clientId: string; clientSecret: string } | null>(null);
+    const [secretData, setSecretData] = useState<{
+        clientId: string;
+        clientSecret: string;
+    } | null>(null);
     const [copied, setCopied] = useState(false);
 
     // Update local state when restaurant data changes (only if values differ)
@@ -79,7 +123,12 @@ export default function RestaurantDetailPage() {
         isActive !== (restaurant?.isActive ?? true);
 
     const updateMutation = useMutation({
-        mutationFn: async (updates: { name?: string; website?: string; information?: string; isActive?: boolean }) => {
+        mutationFn: async (updates: {
+            name?: string;
+            website?: string;
+            information?: string;
+            isActive?: boolean;
+        }) => {
             await api.patch(API.RESTAURANT_DETAIL(restaurantId), updates);
         },
         onSuccess: () => {
@@ -103,10 +152,14 @@ export default function RestaurantDetailPage() {
 
     const deleteAuthMutation = useMutation({
         mutationFn: async (authId: string) => {
-            await api.delete(API.DELETE_RESTAURANT_AUTHENTICATION(restaurantId, authId));
+            await api.delete(
+                API.DELETE_RESTAURANT_AUTHENTICATION(restaurantId, authId)
+            );
         },
         onSuccess: () => {
-            qc.invalidateQueries({ queryKey: ["authentications", restaurantId] });
+            qc.invalidateQueries({
+                queryKey: ["authentications", restaurantId],
+            });
             toast.success("Authentication deleted successfully.");
         },
         onError: () => {
@@ -116,7 +169,9 @@ export default function RestaurantDetailPage() {
 
     const createAuthMutation = useMutation({
         mutationFn: async () => {
-            const response = await api.post(API.RESTAURANT_AUTHENTICATIONS(restaurantId));
+            const response = await api.post(
+                API.RESTAURANT_AUTHENTICATIONS(restaurantId)
+            );
             return response.data;
         },
         onSuccess: (data) => {
@@ -125,7 +180,9 @@ export default function RestaurantDetailPage() {
                 clientSecret: data.clientSecret,
             });
             setShowSecretDialog(true);
-            qc.invalidateQueries({ queryKey: ["authentications", restaurantId] });
+            qc.invalidateQueries({
+                queryKey: ["authentications", restaurantId],
+            });
             toast.success("Authentication created successfully.");
         },
         onError: () => {
@@ -153,15 +210,23 @@ export default function RestaurantDetailPage() {
         <>
             {/* Back button and breadcrumb */}
             <div className="mb-3 flex items-center gap-3">
-                <Button variant="outline" size="icon" onClick={() => router.history.back()}>
+                <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => router.history.back()}
+                >
                     <IconArrowLeft />
                 </Button>
-                <div className="text-muted-foreground text-sm">Restaurants &gt; {restaurant.name}</div>
+                <div className="text-muted-foreground text-sm">
+                    Restaurants &gt; {restaurant.name}
+                </div>
             </div>
 
             {/* Page Title */}
             <div className="mb-6 flex items-center justify-between">
-                <h2 className="text-2xl font-bold tracking-tight">{restaurant.name}</h2>
+                <h2 className="text-2xl font-bold tracking-tight">
+                    {restaurant.name}
+                </h2>
                 <Badge variant="outline">{restaurant.id}</Badge>
             </div>
 
@@ -169,16 +234,28 @@ export default function RestaurantDetailPage() {
             <Card className="mb-4">
                 <CardHeader>
                     <CardTitle>Restaurant Details</CardTitle>
-                    <CardDescription>Manage basic restaurant information</CardDescription>
+                    <CardDescription>
+                        Manage basic restaurant information
+                    </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="space-y-2">
                         <Label htmlFor="restaurantName">Restaurant Name</Label>
-                        <Input id="restaurantName" value={restaurantName} onChange={(e) => setRestaurantName(e.target.value)} />
+                        <Input
+                            id="restaurantName"
+                            value={restaurantName}
+                            onChange={(e) => setRestaurantName(e.target.value)}
+                        />
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="website">Website</Label>
-                        <Input id="website" type="url" placeholder="https://example.com" value={website} onChange={(e) => setWebsite(e.target.value)} />
+                        <Input
+                            id="website"
+                            type="url"
+                            placeholder="https://example.com"
+                            value={website}
+                            onChange={(e) => setWebsite(e.target.value)}
+                        />
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="information">Instructions</Label>
@@ -193,15 +270,30 @@ export default function RestaurantDetailPage() {
                     </div>
                     <div className="flex items-center justify-between pt-2">
                         <div className="flex items-center space-x-2">
-                            <Switch id="isActive" checked={isActive} onCheckedChange={setIsActive} />
+                            <Switch
+                                id="isActive"
+                                checked={isActive}
+                                onCheckedChange={setIsActive}
+                            />
                             <Label htmlFor="isActive">Active</Label>
                         </div>
-                        <Button onClick={handleUpdate} disabled={!hasChanges || updateMutation.isPending}>
-                            {updateMutation.isPending ? "Updating..." : "Update"}
+                        <Button
+                            onClick={handleUpdate}
+                            disabled={!hasChanges || updateMutation.isPending}
+                        >
+                            {updateMutation.isPending
+                                ? "Updating..."
+                                : "Update"}
                         </Button>
                     </div>
                 </CardContent>
             </Card>
+
+            {/* Seating Info Card */}
+            <SeatingInfoCard
+                restaurantId={restaurantId}
+                seatingAreas={restaurant.seatingAreas ?? []}
+            />
 
             {/* Restaurant Authentications */}
             <Card className="mb-4">
@@ -209,9 +301,15 @@ export default function RestaurantDetailPage() {
                     <div className="flex items-center justify-between">
                         <div>
                             <CardTitle>API Authentications</CardTitle>
-                            <CardDescription>Manage API credentials for this restaurant</CardDescription>
+                            <CardDescription>
+                                Manage API credentials for this restaurant
+                            </CardDescription>
                         </div>
-                        <Button size="sm" onClick={() => createAuthMutation.mutate()} disabled={createAuthMutation.isPending}>
+                        <Button
+                            size="sm"
+                            onClick={() => createAuthMutation.mutate()}
+                            disabled={createAuthMutation.isPending}
+                        >
                             <IconPlus size={16} className="mr-1" />
                             Add Authentication
                         </Button>
@@ -230,7 +328,10 @@ export default function RestaurantDetailPage() {
                         <TableBody>
                             {authentications.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={4} className="text-center text-muted-foreground">
+                                    <TableCell
+                                        colSpan={4}
+                                        className="text-center text-muted-foreground"
+                                    >
                                         No authentications configured
                                     </TableCell>
                                 </TableRow>
@@ -240,15 +341,36 @@ export default function RestaurantDetailPage() {
                                         <TableCell className="font-mono text-sm">
                                             <pre>{auth.clientId}</pre>
                                         </TableCell>
-                                        <TableCell className="font-mono text-sm">{"*".repeat(12)}</TableCell>
+                                        <TableCell className="font-mono text-sm">
+                                            {"*".repeat(12)}
+                                        </TableCell>
                                         <TableCell>
-                                            <Badge variant={auth.isActive ? "default" : "outline"}>
-                                                {auth.isActive ? "Active" : "Inactive"}
+                                            <Badge
+                                                variant={
+                                                    auth.isActive
+                                                        ? "default"
+                                                        : "outline"
+                                                }
+                                            >
+                                                {auth.isActive
+                                                    ? "Active"
+                                                    : "Inactive"}
                                             </Badge>
                                         </TableCell>
                                         <TableCell>
-                                            <Button size="icon" variant="ghost" onClick={() => deleteAuthMutation.mutate(auth.id)}>
-                                                <IconTrash size={16} className="text-red-500" />
+                                            <Button
+                                                size="icon"
+                                                variant="ghost"
+                                                onClick={() =>
+                                                    deleteAuthMutation.mutate(
+                                                        auth.id
+                                                    )
+                                                }
+                                            >
+                                                <IconTrash
+                                                    size={16}
+                                                    className="text-red-500"
+                                                />
                                             </Button>
                                         </TableCell>
                                     </TableRow>
@@ -266,28 +388,51 @@ export default function RestaurantDetailPage() {
             <Dialog open={showSecretDialog} onOpenChange={setShowSecretDialog}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Authentication Created Successfully</DialogTitle>
+                        <DialogTitle>
+                            Authentication Created Successfully
+                        </DialogTitle>
                         <DialogDescription>
-                            Your client credentials have been generated. Please save the client secret now as it will not be shown again.
+                            Your client credentials have been generated. Please
+                            save the client secret now as it will not be shown
+                            again.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4">
                         <div>
-                            <Label className="text-sm font-medium">Client ID</Label>
-                            <div className="bg-muted mt-1 rounded-md p-3 font-mono text-sm">{secretData?.clientId}</div>
+                            <Label className="text-sm font-medium">
+                                Client ID
+                            </Label>
+                            <div className="bg-muted mt-1 rounded-md p-3 font-mono text-sm">
+                                {secretData?.clientId}
+                            </div>
                         </div>
                         <div>
-                            <Label className="text-sm font-medium">Client Secret</Label>
+                            <Label className="text-sm font-medium">
+                                Client Secret
+                            </Label>
                             <div className="mt-1 flex items-center gap-2">
                                 <div className="flex-1 rounded-md border-2 border-yellow-500 bg-yellow-50 p-3 font-mono text-sm break-all dark:bg-yellow-950/20">
                                     {secretData?.clientSecret}
                                 </div>
-                                <Button variant="outline" size="icon" onClick={handleCopySecret} title="Copy to clipboard">
-                                    {copied ? <IconCheck size={18} className="text-green-500" /> : <IconCopy size={18} />}
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    onClick={handleCopySecret}
+                                    title="Copy to clipboard"
+                                >
+                                    {copied ? (
+                                        <IconCheck
+                                            size={18}
+                                            className="text-green-500"
+                                        />
+                                    ) : (
+                                        <IconCopy size={18} />
+                                    )}
                                 </Button>
                             </div>
                             <p className="mt-2 text-xs text-yellow-600 dark:text-yellow-500">
-                                Warning: This secret will only be shown once. Make sure to save it securely.
+                                Warning: This secret will only be shown once.
+                                Make sure to save it securely.
                             </p>
                         </div>
                     </div>
@@ -299,4 +444,3 @@ export default function RestaurantDetailPage() {
         </>
     );
 }
-

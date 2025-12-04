@@ -11,3 +11,4 @@ export class EndCallModel {
     @IsString({ each: true })
     languages: string[];
 }
+

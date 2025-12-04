@@ -96,6 +96,27 @@ export class RestaurantService {
         return restaurant;
     }
 
+    public async findRestaurantByIdWithSeatingAreas(
+        id: string
+    ): Promise<{
+        restaurant: Restaurant;
+        seatingAreas: import("@repo/database").SeatingArea[];
+    } | null> {
+        this.logger.log(`Finding restaurant by id with seating areas: ${id}`);
+        const restaurant = await this.databaseService.restaurant.findUnique({
+            where: { id },
+            include: { seatingAreas: true },
+        });
+
+        if (!restaurant) return null;
+
+        const { seatingAreas, ...restaurantWithoutAreas } = restaurant;
+        return {
+            restaurant: restaurantWithoutAreas as Restaurant,
+            seatingAreas,
+        };
+    }
+
     public async getRestaurants(): Promise<Restaurant[]> {
         this.logger.log("Fetching all restaurants");
         return this.databaseService.restaurant.findMany({});

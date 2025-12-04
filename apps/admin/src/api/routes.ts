@@ -18,9 +18,11 @@ export const API = {
     // Restaurants
     RESTAURANTS: "/restaurants",
     RESTAURANT_DETAIL: (id: string) => `/restaurants/${id}`,
-    RESTAURANT_AUTHENTICATIONS: (id: string) => `/restaurants/${id}/authentications`,
+    RESTAURANT_AUTHENTICATIONS: (id: string) =>
+        `/restaurants/${id}/authentications`,
     DELETE_RESTAURANT_AUTHENTICATION: (restaurantId: string, authId: string) =>
         `/restaurants/${restaurantId}/authentications/${authId}`,
+    SYNC_SEATING_AREAS: (id: string) => `/restaurants/${id}/sync-seating-areas`,
 
     // LiveKit
     LIVEKIT_TOKEN: (restaurantId: string) => `/livekit/token/${restaurantId}`,
@@ -28,6 +30,8 @@ export const API = {
     // Customers
     CUSTOMERS: "/customers",
     CUSTOMER_DETAIL: (id: string) => `/customers/${id}`,
+    CUSTOMER_CALLS: (id: string) => `/customers/${id}/calls`,
+    CUSTOMER_RESERVATIONS: (id: string) => `/customers/${id}/reservations`,
 
     // Admins
     ADMINS: "/users",

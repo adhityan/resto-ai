@@ -253,10 +253,12 @@ If transfer_to_number tool fails (e.g., "Transfer to number tool is only availab
 2. Do NOT attempt to transfer again
 
 ## Unresponsive customers at call start
-At the very beginning of a call, if customer doesn't respond to your greeting:
+At the very beginning of a call and only after you have said your greeting, if the customer doesn't respond:
 1. Ask: "Hello? Are you still there?"
 2. If still no response: politely say goodbye and immediately trigger the endCall function
 3. This ONLY applies at call start before any conversation has happened
+4. Do NOT ask "Are you still there?" before greeting the customer
+
 
 ## Prank calls
 Briefly state you need to keep the line available for genuine reservations and end the call professionally using the endCall function.
@@ -331,9 +333,9 @@ export class RestaurantStandardAgent extends voice.Agent {
     }
 
     override async onEnter(): Promise<void> {
-        this.session.generateReply({
-            instructions: this.renderer.render(GREETING_TEMPLATE),
+        this.session.say(GREETING_TEMPLATE, {
             allowInterruptions: true,
+            addToChatCtx: true,
         });
     }
 }

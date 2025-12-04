@@ -1,5 +1,13 @@
 import { create } from "zustand";
 
+export interface SeatingArea {
+    id: string;
+    name: string;
+    description: string | null;
+    maxCapacity: number;
+    zenchefRoomId: number;
+}
+
 export interface Restaurant {
     id: string;
     name: string;
@@ -9,6 +17,7 @@ export interface Restaurant {
     restaurantPhoneNumber: string;
     createdAt: Date;
     updatedAt: Date;
+    seatingAreas?: SeatingArea[];
 }
 
 export interface RestaurantAuthentication {
@@ -32,4 +41,3 @@ export const useRestaurantsStore = create<RestaurantsState>()((set) => ({
     setSelectedRestaurant: (restaurant) =>
         set(() => ({ selectedRestaurant: restaurant })),
 }));
-

@@ -18,3 +18,4 @@ export function getRestaurantByPhone(phoneNumber: string | null) {
     if (!phoneNumber) return undefined;
     return phoneToRestaurantMapping[phoneNumber];
 }
+

@@ -57,6 +57,9 @@ FROM node:25-slim AS runner
 WORKDIR /repo/apps/livekit
 ENV NODE_ENV=production
 
+# Install CA certificates and OpenSSL for LiveKit native engine
+RUN apt-get update && apt-get install -y ca-certificates openssl && rm -rf /var/lib/apt/lists/*
+
 # Copy the ENTIRE pruned repo (node_modules, built artifacts, etc)
 COPY --from=app-builder /repo /repo
 

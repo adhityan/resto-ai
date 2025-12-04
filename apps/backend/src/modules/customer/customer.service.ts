@@ -1,7 +1,8 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
-import { DatabaseService, Customer } from "@repo/database";
+import { DatabaseService, Customer, Call, Reservation } from "@repo/database";
 import { RestaurantService } from "../restaurant/restaurant.service";
 import { GeneralError } from "src/errors";
+import { CustomerNotFoundError } from "../../errors";
 
 @Injectable()
 export class CustomerService {
@@ -125,5 +126,81 @@ export class CustomerService {
         return this.databaseService.customer.findMany({
             where: { restaurantId },
         });
+    }
+
+    public async getCustomerCalls(
+        customerId: string
+    ): Promise<{
+        items: (Call & { restaurant: { name: string } })[];
+        total: number;
+    }> {
+        this.logger.log(`Fetching calls for customer: ${customerId}`);
+
+        const customer = await this.findCustomerById(customerId);
+        if (!customer) {
+            throw new CustomerNotFoundError(customerId);
+        }
+
+        const [calls, total] = await Promise.all([
+            this.databaseService.call.findMany({
+                where: { customerId },
+                include: {
+                    restaurant: {
+                        select: { name: true },
+                    },
+                },
+                orderBy: { startTime: "desc" },
+            }),
+            this.databaseService.call.count({ where: { customerId } }),
+        ]);
+
+        return { items: calls, total };
+    }
+
+    public async getCustomerReservations(
+        customerId: string
+    ): Promise<{
+        items: (Reservation & { restaurant: { id: string; name: string } })[];
+        total: number;
+    }> {
+        this.logger.log(`Fetching reservations for customer: ${customerId}`);
+
+        const customer = await this.findCustomerById(customerId);
+        if (!customer) {
+            throw new CustomerNotFoundError(customerId);
+        }
+
+        // Find reservations by matching customer phone or email
+        const where: any = {
+            restaurantId: customer.restaurantId,
+            OR: [] as any[],
+        };
+
+        if (customer.phone) {
+            where.OR.push({ customerPhone: customer.phone });
+        }
+        if (customer.email) {
+            where.OR.push({ customerEmail: customer.email });
+        }
+
+        // If no phone or email, return empty
+        if (where.OR.length === 0) {
+            return { items: [], total: 0 };
+        }
+
+        const [reservations, total] = await Promise.all([
+            this.databaseService.reservation.findMany({
+                where,
+                include: {
+                    restaurant: {
+                        select: { id: true, name: true },
+                    },
+                },
+                orderBy: [{ date: "desc" }, { time: "desc" }],
+            }),
+            this.databaseService.reservation.count({ where }),
+        ]);
+
+        return { items: reservations, total };
     }
 }

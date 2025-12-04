@@ -24,6 +24,7 @@ import { getRestaurantByPhone } from "./utils/restaurant.js";
 import { CallModel, CustomerModel } from "@repo/contracts";
 import { Speaker, CallTranscript } from "@repo/database";
 
+console.log("LIVEKIT_URL: ", process.env.LIVEKIT_URL);
 // if (process.argv.includes("dev")) {
 //     const token = await createToken("test-room", "user_123");
 //     console.log("Token: ", token);
@@ -54,7 +55,8 @@ function createSession(ctx: JobContext) {
         vad: ctx.proc.userData.vad! as silero.VAD,
         voiceOptions: {
             minInterruptionWords: 1,
-            preemptiveGeneration: true,
+            preemptiveGeneration: false,
+            userAwayTimeout: 30,
         },
     });
 }
@@ -196,7 +198,10 @@ export default defineAgent({
         createUsageCollector(ctx, session);
         setupSessionListeners(session, client, call.id);
 
-        // Start the session with the restaurant standard agent
+        // Connect to room FIRST
+        await ctx.connect();
+
+        // THEN start the session with the connected room
         await session.start({
             agent: new RestaurantStandardAgent({
                 client,
@@ -211,9 +216,6 @@ export default defineAgent({
                 closeOnDisconnect: true,
             },
         });
-
-        // Agent handles greeting in onEnter method
-        await ctx.connect();
     },
 });
 

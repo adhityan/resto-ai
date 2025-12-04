@@ -1,5 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { Restaurant } from "@repo/database";
+import { Restaurant, SeatingArea } from "@repo/database";
+import { RestaurantSeatingAreaModel } from "./restaurant-seating-area.model";
 
 export class RestaurantModel {
     @ApiProperty()
@@ -26,7 +27,10 @@ export class RestaurantModel {
     @ApiProperty()
     updatedAt: Date;
 
-    constructor(restaurant: Restaurant) {
+    @ApiProperty({ type: [RestaurantSeatingAreaModel], required: false })
+    seatingAreas?: RestaurantSeatingAreaModel[];
+
+    constructor(restaurant: Restaurant, seatingAreas?: SeatingArea[]) {
         this.id = restaurant.id;
         this.name = restaurant.name;
         this.information = restaurant.information;
@@ -35,5 +39,8 @@ export class RestaurantModel {
         this.restaurantPhoneNumber = restaurant.incomingPhoneNumber;
         this.createdAt = restaurant.createdAt;
         this.updatedAt = restaurant.updatedAt;
+        this.seatingAreas = seatingAreas?.map(
+            (area) => new RestaurantSeatingAreaModel(area)
+        );
     }
 }

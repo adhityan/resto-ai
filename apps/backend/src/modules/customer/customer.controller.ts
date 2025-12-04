@@ -19,6 +19,10 @@ import {
     CustomerListItemModel,
     CustomerListResponseModel,
     UpsertCustomerModel,
+    CallListItemModel,
+    CallListResponseModel,
+    AdminReservationModel,
+    AdminReservationListResponseModel,
 } from "@repo/contracts";
 
 import { CustomerService } from "./customer.service";
@@ -86,5 +90,33 @@ export class CustomerController {
             body
         );
         return new CustomerModel(customer);
+    }
+
+    @OnlyAdmin()
+    @Get(":id/calls")
+    @ApiOkResponse({ type: CallListResponseModel })
+    public async getCustomerCalls(
+        @Param("id") id: string
+    ): Promise<CallListResponseModel> {
+        const { items, total } =
+            await this.customerService.getCustomerCalls(id);
+        return new CallListResponseModel(
+            items.map((call) => new CallListItemModel(call)),
+            total
+        );
+    }
+
+    @OnlyAdmin()
+    @Get(":id/reservations")
+    @ApiOkResponse({ type: AdminReservationListResponseModel })
+    public async getCustomerReservations(
+        @Param("id") id: string
+    ): Promise<AdminReservationListResponseModel> {
+        const { items, total } =
+            await this.customerService.getCustomerReservations(id);
+        return new AdminReservationListResponseModel(
+            items.map((r) => new AdminReservationModel(r)),
+            total
+        );
     }
 }
