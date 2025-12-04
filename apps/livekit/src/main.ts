@@ -16,22 +16,12 @@ import * as silero from "@livekit/agents-plugin-silero";
 import { fileURLToPath } from "node:url";
 import "dotenv/config";
 
-import { Assistant } from "./agents/sample.js";
+import { RestaurantStandardAgent } from "./agents/restaurantStandard.js";
 import { createToken } from "./utils/token.js";
-import { endCall } from "./utils/call.js";
+import { getFieldFromContext, getRequiredMetadataField } from "./utils/call.js";
 
 const token = await createToken("test-room", "user_123");
 console.log("Token: ", token);
-
-function getRestaurantId(metadataString: string) {
-    try {
-        // console.log(`Parsing metadata: ${metadataString}`);
-        const metadata = JSON.parse(metadataString);
-        return metadata.restaurantId ?? null;
-    } catch {
-        return null;
-    }
-}
 
 export default defineAgent({
     prewarm: async (proc: JobProcess) => {
@@ -39,16 +29,17 @@ export default defineAgent({
     },
     entry: async (ctx: JobContext) => {
         console.log("Room name: ", ctx.job?.room?.name);
-        const restaurantId = getRestaurantId(ctx.job.metadata);
 
-        if (!restaurantId) {
-            console.error("Restaurant ID is required in job metadata!");
-            endCall(ctx);
-            return;
-        }
+        console.log("Metadata: ", ctx.job?.metadata);
+        const restaurantApiKey = await getRequiredMetadataField(
+            ctx,
+            "restaurantApiKey"
+        );
+        if (!restaurantApiKey) return;
 
+        const restaurantId = getFieldFromContext(ctx, "restaurantId");
         console.log(`Starting session for restaurant: ${restaurantId}...`);
-        // Set up a voice AI pipeline using OpenAI, Cartesia, AssemblyAI, and the LiveKit turn detector
+
         const session = new voice.AgentSession({
             stt: new deepgram.STT({
                 detectLanguage: true,
@@ -69,19 +60,15 @@ export default defineAgent({
                 model: "gemini-2.5-flash",
             }),
 
-            // VAD and turn detection are used to determine when the user is speaking and when the agent should respond
-            // See more at https://docs.livekit.io/agents/build/turns
             turnDetection: new livekit.turnDetector.MultilingualModel(),
             vad: ctx.proc.userData.vad! as silero.VAD,
             voiceOptions: {
                 minInterruptionWords: 1,
-                // Allow the LLM to generate a response while waiting for the end of turn
                 preemptiveGeneration: true,
             },
         });
 
-        // Metrics collection, to measure pipeline performance
-        // For more information, see https://docs.livekit.io/agents/build/metrics/
+        // Metrics collection
         const usageCollector = new metrics.UsageCollector();
         session.on(voice.AgentSessionEventTypes.MetricsCollected, (ev) => {
             metrics.logMetrics(ev.metrics);
@@ -94,9 +81,12 @@ export default defineAgent({
         };
         ctx.addShutdownCallback(logUsage);
 
-        // Start the session, which initializes the voice pipeline and warms up the models
+        // Start the session with the restaurant standard agent
         await session.start({
-            agent: new Assistant(),
+            agent: new RestaurantStandardAgent({
+                metadata: ctx.job.metadata,
+                apiKey: restaurantApiKey,
+            }),
             room: ctx.room,
             outputOptions: {
                 transcriptionEnabled: true,
@@ -107,11 +97,7 @@ export default defineAgent({
             },
         });
 
-        session.generateReply({
-            instructions: "greet the user and ask about their day",
-        });
-
-        // Join the room and connect to the user
+        // Agent handles greeting in onEnter method
         await ctx.connect();
     },
 });

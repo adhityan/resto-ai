@@ -7,3 +7,4 @@ export * from "./env.util";
 export * from "./date.util";
 export * from "./cache.util";
 export * from "./phone";
+export * from "./template";
