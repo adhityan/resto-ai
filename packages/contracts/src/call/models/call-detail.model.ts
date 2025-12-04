@@ -6,19 +6,19 @@ export class CallDetailCustomerModel {
     id: string;
 
     @ApiProperty()
-    name: string;
+    phone: string;
 
     @ApiPropertyOptional()
-    email: string | undefined;
+    name?: string;
 
     @ApiPropertyOptional()
-    phone: string | undefined;
+    email?: string;
 
     constructor(customer: Customer) {
         this.id = customer.id;
-        this.name = customer.name;
+        this.phone = customer.phone;
+        this.name = customer.name ?? undefined;
         this.email = customer.email ?? undefined;
-        this.phone = customer.phone ?? undefined;
     }
 }
 
@@ -102,4 +102,3 @@ export class CallDetailModel {
         this.updatedAt = call.updatedAt;
     }
 }
-

@@ -77,35 +77,45 @@ export class CustomerService {
         });
     }
 
-    public async getCustomers(filters?: {
-        restaurants?: string[];
+    public async getCustomers(filters: {
+        restaurantId?: string;
         skip?: number;
         take?: number;
-    }): Promise<Customer[]> {
+    }): Promise<{
+        items: (Customer & { restaurant: { name: string } })[];
+        total: number;
+    }> {
         this.logger.log(
             `Fetching customers with filters: ${JSON.stringify(filters)}`
         );
 
-        const where: any = {};
+        const where: { restaurantId?: string } = {};
 
-        // Restaurant filter
-        if (filters?.restaurants && filters.restaurants.length > 0) {
-            where.restaurantId = {
-                in: filters.restaurants,
-            };
+        if (filters.restaurantId) {
+            where.restaurantId = filters.restaurantId;
         }
 
-        const skip = filters?.skip || 0;
-        const take = filters?.take || 10;
+        const skip = filters.skip ?? 0;
+        const take = filters.take ?? 10;
 
-        return this.databaseService.customer.findMany({
-            where,
-            skip,
-            take,
-            orderBy: {
-                createdAt: "desc",
-            },
-        });
+        const [customers, total] = await Promise.all([
+            this.databaseService.customer.findMany({
+                where,
+                include: {
+                    restaurant: {
+                        select: { name: true },
+                    },
+                },
+                skip,
+                take,
+                orderBy: {
+                    createdAt: "desc",
+                },
+            }),
+            this.databaseService.customer.count({ where }),
+        ]);
+
+        return { items: customers, total };
     }
 
     public async getCustomersByRestaurantId(

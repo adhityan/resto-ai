@@ -1,14 +1,17 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { IconX } from "@tabler/icons-react";
 import api from "@/api";
 import { API } from "@/api/routes";
 import { useCustomersStore } from "@/stores/customersStore";
-import { DataTableFacetedFilter } from "@/components/data-table-faceted-filter";
 import { useRestaurantsStore } from "@/stores/restaurantsStore";
+import { DataTableFacetedFilter } from "@/components/data-table-faceted-filter";
+import { Button } from "@/components/ui/button";
 
 export default function CustomersToolbar() {
     const filters = useCustomersStore((s) => s.filters);
     const setFilterValue = useCustomersStore((s) => s.setFilterValue);
+    const resetFilters = useCustomersStore((s) => s.resetFilters);
     const restaurants = useRestaurantsStore((s) => s.restaurants);
     const setRestaurants = useRestaurantsStore((s) => s.setRestaurants);
 
@@ -29,6 +32,8 @@ export default function CustomersToolbar() {
         }));
     }, [restaurants]);
 
+    const isFiltered = !!filters.restaurantId;
+
     return (
         <div className="flex items-center justify-between">
             <div className="flex flex-1 items-center space-x-2">
@@ -41,6 +46,12 @@ export default function CustomersToolbar() {
                         setFilterValue("restaurantId", value || undefined);
                     }}
                 />
+                {isFiltered && (
+                    <Button variant="ghost" onClick={() => resetFilters()} className="h-8 px-2 lg:px-3">
+                        Reset
+                        <IconX className="ml-2 h-4 w-4" />
+                    </Button>
+                )}
             </div>
         </div>
     );

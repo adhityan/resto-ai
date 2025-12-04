@@ -2,24 +2,28 @@ import { create } from "zustand";
 
 export interface CustomerListItem {
     id: string;
-    name: string;
+    phone: string;
+    name?: string;
     email?: string;
-    phone?: string;
+    numberOfCalls: number;
+    restaurantName: string;
+    restaurantId: string;
     createdAt: Date;
-    updatedAt: Date;
 }
 
 export interface CustomerDetail {
     id: string;
-    name: string;
+    phone: string;
+    name?: string;
     email?: string;
-    phone?: string;
+    address?: string;
+    numberOfCalls: number;
     createdAt: Date;
     updatedAt: Date;
 }
 
 export interface CustomerListFilters {
-    restaurantId?: string;
+    restaurantId: string | undefined;
     skip: number;
     take: number;
 }
@@ -33,7 +37,10 @@ interface CustomersState {
     setCustomers: (customers: CustomerListItem[], total: number) => void;
     selectedCustomer: CustomerDetail | null;
     setSelectedCustomer: (customer: CustomerDetail | null) => void;
-    setFilterValue: (type: keyof CustomerListFilters, values: string[] | string | number | undefined) => void;
+    setFilterValue: (
+        type: keyof CustomerListFilters,
+        values: string[] | string | number | undefined
+    ) => void;
     setPagination: (pagination: { skip: number; take: number }) => void;
 }
 
@@ -47,12 +54,15 @@ export const useCustomersStore = create<CustomersState>()((set) => ({
     customers: [],
     total: 0,
     filters: defaultFilters,
-    setFilters: (filters) => set((state) => ({ filters: { ...state.filters, ...filters } })),
+    setFilters: (filters) =>
+        set((state) => ({ filters: { ...state.filters, ...filters } })),
     resetFilters: () => set({ filters: defaultFilters }),
     setCustomers: (customers, total) => set(() => ({ customers, total })),
     selectedCustomer: null,
-    setSelectedCustomer: (customer) => set(() => ({ selectedCustomer: customer })),
-    setFilterValue: (type, values) => set((state) => ({ filters: { ...state.filters, [type]: values } })),
+    setSelectedCustomer: (customer) =>
+        set(() => ({ selectedCustomer: customer })),
+    setFilterValue: (type, values) =>
+        set((state) => ({ filters: { ...state.filters, [type]: values } })),
     setPagination: (pagination) =>
         set((state) => ({
             filters: { ...state.filters, ...pagination },

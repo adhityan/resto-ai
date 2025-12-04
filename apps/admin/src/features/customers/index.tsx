@@ -11,6 +11,7 @@ import { Search } from "@/components/search";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { columns } from "./components/customers-columns";
 import CustomersTable from "./components/customers-table";
+import type { CustomerListResponseModel } from "@repo/contracts";
 
 export default function CustomerList() {
     const [isInitialized, setIsInitialized] = useState(false);
@@ -24,10 +25,9 @@ export default function CustomerList() {
 
     // Parse URL search params on mount -> store
     useEffect(() => {
-        const { applications, products, skip, take } = search;
+        const { restaurantId, skip, take } = search;
         setFilters({
-            applications: applications?.split(",") ?? [],
-            products: products?.split(",") ?? [],
+            restaurantId: restaurantId ?? undefined,
             skip: skip ?? 0,
             take: take ?? 10,
         });
@@ -47,8 +47,7 @@ export default function CustomerList() {
         navigate({
             // @ts-expect-error - This is a temporary workaround to unblock the project
             search: (_prev) => ({
-                applications: filters.applications.length > 0 ? filters.applications.join(",") : undefined,
-                products: filters.products.length > 0 ? filters.products.join(",") : undefined,
+                restaurantId: filters.restaurantId ?? undefined,
                 skip: filters.skip > 0 ? filters.skip : undefined,
                 take: filters.take !== 10 ? filters.take : undefined,
             }),
@@ -57,16 +56,15 @@ export default function CustomerList() {
     }, [filters, navigate]);
 
     // Fetch customers via TanStack Query
-    const { data: customersResp, isFetching } = useQuery<{ items: CustomerListItem[]; total: number }>({
+    const { data: customersResp, isFetching } = useQuery<CustomerListResponseModel>({
         queryKey: ["customers", filters],
         queryFn: async () => {
             const params = new URLSearchParams();
-            if (filters.applications.length) params.set("applications", filters.applications.join(","));
-            if (filters.products.length) params.set("products", filters.products.join(","));
+            if (filters.restaurantId) params.set("restaurantId", filters.restaurantId);
             if (filters.skip) params.set("skip", String(filters.skip));
             if (filters.take) params.set("take", String(filters.take));
             const response = await api.get(`${API.CUSTOMERS}?${params.toString()}`);
-            return { items: response.data, total: response.data.length };
+            return response.data as CustomerListResponseModel;
         },
         enabled: isInitialized,
         refetchOnWindowFocus: false,
@@ -74,7 +72,7 @@ export default function CustomerList() {
 
     useEffect(() => {
         if (customersResp) {
-            setCustomersStore(customersResp.items, customersResp.total);
+            setCustomersStore(customersResp.items as CustomerListItem[], customersResp.total);
         }
     }, [customersResp, setCustomersStore]);
 

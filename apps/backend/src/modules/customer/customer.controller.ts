@@ -14,8 +14,12 @@ import {
     ApiQuery,
     ApiTags,
 } from "@nestjs/swagger";
-import { CustomerModel, UpsertCustomerModel } from "@repo/contracts";
-import { PaginationParams } from "@repo/utils";
+import {
+    CustomerModel,
+    CustomerListItemModel,
+    CustomerListResponseModel,
+    UpsertCustomerModel,
+} from "@repo/contracts";
 
 import { CustomerService } from "./customer.service";
 import {
@@ -34,28 +38,25 @@ export class CustomerController {
 
     @OnlyAdmin()
     @Get()
-    @PaginationParams({ defaultLimit: 10 })
-    @ApiQuery({
-        name: "restaurants",
-        required: false,
-        description: "Comma-separated restaurant IDs",
-    })
-    @ApiOkResponse({
-        type: [CustomerModel],
-    })
+    @ApiOkResponse({ type: CustomerListResponseModel })
+    @ApiQuery({ name: "restaurantId", required: false })
+    @ApiQuery({ name: "skip", required: false, type: Number })
+    @ApiQuery({ name: "take", required: false, type: Number })
     public async getCustomers(
-        @Query("restaurants") restaurants?: string,
+        @Query("restaurantId") restaurantId?: string,
         @Query("skip") skip?: string,
         @Query("take") take?: string
-    ): Promise<CustomerModel[]> {
-        const filters = {
-            restaurants: restaurants ? restaurants.split(",") : undefined,
-            skip: skip ? Number.parseInt(skip, 10) : 0,
-            take: take ? Number.parseInt(take, 10) : 10,
-        };
+    ): Promise<CustomerListResponseModel> {
+        const { items, total } = await this.customerService.getCustomers({
+            restaurantId,
+            skip: skip ? Number.parseInt(skip, 10) : undefined,
+            take: take ? Number.parseInt(take, 10) : undefined,
+        });
 
-        const customers = await this.customerService.getCustomers(filters);
-        return customers.map((customer) => new CustomerModel(customer));
+        return new CustomerListResponseModel(
+            items.map((customer) => new CustomerListItemModel(customer)),
+            total
+        );
     }
 
     @isAuthenticated()

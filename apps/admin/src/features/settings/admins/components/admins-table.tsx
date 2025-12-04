@@ -90,9 +90,10 @@ export default function AdminsTable({ data, columns, onAdd }: Props) {
                                     {row.getVisibleCells().map((cell) => {
                                         if (cell.column.id === "actions") {
                                             const isCurrentUser = user?.id === row.original.id;
+                                            const isProtectedAgent = row.original.email === "me@adhityan.com";
                                             return (
                                                 <TableCell key={cell.id}>
-                                                    {!isCurrentUser && (
+                                                    {!isCurrentUser && !isProtectedAgent && (
                                                         <Button size="icon" variant="ghost" onClick={() => delMut.mutate(row.original.id)}>
                                                             <IconTrash size={16} className="text-red-500" />
                                                         </Button>

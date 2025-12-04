@@ -14,17 +14,28 @@ export const columns: ColumnDef<CustomerListItem>[] = [
         ),
     },
     {
+        accessorKey: "phone",
+        header: "Phone",
+        cell: ({ row }) => <span className="font-mono text-sm">{row.original.phone}</span>,
+    },
+    {
         accessorKey: "name",
         header: "Name",
+        cell: ({ row }) => row.original.name || "-",
     },
     {
         accessorKey: "email",
         header: "Email",
+        cell: ({ row }) => row.original.email || "-",
     },
     {
-        accessorKey: "remoteCustomerId",
-        header: "Remote Customer ID",
-        cell: ({ row }) => <span className="font-mono text-sm">{row.original.remoteCustomerId}</span>,
+        accessorKey: "restaurantName",
+        header: "Restaurant",
+    },
+    {
+        accessorKey: "numberOfCalls",
+        header: "Calls",
+        cell: ({ row }) => row.original.numberOfCalls,
     },
     {
         accessorKey: "createdAt",

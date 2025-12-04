@@ -71,11 +71,11 @@ export default function CustomerDetailPage() {
             </Header>
             <Main fixed>
                 {/* Breadcrumb */}
-                <div className="text-muted-foreground mb-3 text-sm">Customers &gt; {customer.name}</div>
+                <div className="text-muted-foreground mb-3 text-sm">Customers &gt; {customer.name || customer.phone}</div>
 
                 {/* Page Heading */}
                 <div className="mb-6 flex flex-wrap items-center justify-between gap-2">
-                    <h2 className="text-2xl font-bold tracking-tight">{customer.name}</h2>
+                    <h2 className="text-2xl font-bold tracking-tight">{customer.name || customer.phone}</h2>
                     <div className="flex items-center gap-2">
                         <Badge variant="outline" className="font-mono text-xs">
                             {customer.id}
@@ -96,21 +96,31 @@ export default function CustomerDetailPage() {
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div>
-                                <p className="text-muted-foreground text-sm font-medium">Name</p>
-                                <p className="text-lg font-semibold">{customer.name}</p>
+                                <p className="text-muted-foreground text-sm font-medium">Phone</p>
+                                <p className="text-lg font-semibold">{customer.phone}</p>
                             </div>
+                            {customer.name && (
+                                <div>
+                                    <p className="text-muted-foreground text-sm font-medium">Name</p>
+                                    <p className="text-sm">{customer.name}</p>
+                                </div>
+                            )}
                             {customer.email && (
                                 <div>
                                     <p className="text-muted-foreground text-sm font-medium">Email</p>
                                     <p className="text-sm">{customer.email}</p>
                                 </div>
                             )}
-                            {customer.phone && (
+                            {customer.address && (
                                 <div>
-                                    <p className="text-muted-foreground text-sm font-medium">Phone</p>
-                                    <p className="text-sm">{customer.phone}</p>
+                                    <p className="text-muted-foreground text-sm font-medium">Address</p>
+                                    <p className="text-sm">{customer.address}</p>
                                 </div>
                             )}
+                            <div>
+                                <p className="text-muted-foreground text-sm font-medium">Number of Calls</p>
+                                <p className="text-sm font-semibold">{customer.numberOfCalls}</p>
+                            </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <p className="text-muted-foreground text-sm font-medium">Created At</p>

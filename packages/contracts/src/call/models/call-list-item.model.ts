@@ -31,7 +31,7 @@ export class CallListItemModel {
 
     constructor(
         call: Call & {
-            customer?: { name: string } | null;
+            customer?: { name: string | null } | null;
             restaurant: { name: string };
         }
     ) {
@@ -46,4 +46,3 @@ export class CallListItemModel {
         this.restaurantId = call.restaurantId;
     }
 }
-
