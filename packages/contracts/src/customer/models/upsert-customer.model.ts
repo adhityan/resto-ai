@@ -1,11 +1,26 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsEmail, IsOptional, IsString, MaxLength } from "class-validator";
+import {
+    IsBoolean,
+    IsEmail,
+    IsNotEmpty,
+    IsOptional,
+    IsPhoneNumber,
+    IsString,
+    MaxLength,
+} from "class-validator";
 
-export class UpdateCustomerModel {
+export class UpsertCustomerModel {
+    @ApiProperty()
+    @IsNotEmpty()
+    @IsPhoneNumber()
+    phone: string;
+
     @ApiProperty({ required: false })
     @IsOptional()
     @IsString()
-    @MaxLength(100, { message: "Customer name must be less than 100 characters" })
+    @MaxLength(100, {
+        message: "Customer name must be less than 100 characters",
+    })
     name?: string;
 
     @ApiProperty({ required: false })
@@ -19,4 +34,10 @@ export class UpdateCustomerModel {
     @IsString()
     @MaxLength(500, { message: "Address must be less than 500 characters" })
     address?: string;
+
+    @ApiProperty({ required: false })
+    @IsOptional()
+    @IsBoolean()
+    isOnCall?: boolean;
 }
+

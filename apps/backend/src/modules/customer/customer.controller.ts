@@ -5,7 +5,6 @@ import {
     Inject,
     Param,
     Post,
-    Put,
     Query,
     Req,
 } from "@nestjs/common";
@@ -15,11 +14,7 @@ import {
     ApiQuery,
     ApiTags,
 } from "@nestjs/swagger";
-import {
-    CustomerModel,
-    CreateCustomerModel,
-    UpdateCustomerModel,
-} from "@repo/contracts";
+import { CustomerModel, UpsertCustomerModel } from "@repo/contracts";
 import { PaginationParams } from "@repo/utils";
 
 import { CustomerService } from "./customer.service";
@@ -55,8 +50,8 @@ export class CustomerController {
     ): Promise<CustomerModel[]> {
         const filters = {
             restaurants: restaurants ? restaurants.split(",") : undefined,
-            skip: skip ? parseInt(skip, 10) : 0,
-            take: take ? parseInt(take, 10) : 10,
+            skip: skip ? Number.parseInt(skip, 10) : 0,
+            take: take ? Number.parseInt(take, 10) : 10,
         };
 
         const customers = await this.customerService.getCustomers(filters);
@@ -81,32 +76,12 @@ export class CustomerController {
     @ApiCreatedResponse({
         type: CustomerModel,
     })
-    public async createCustomer(
+    public async createOrUpdateCustomer(
         @Req() req: AuthenticatedRequest,
-        @Body() body: CreateCustomerModel
+        @Body() body: UpsertCustomerModel
     ): Promise<CustomerModel> {
-        const customer = await this.customerService.createCustomer(
+        const customer = await this.customerService.upsertCustomer(
             req.loginPayload.userId,
-            body.name,
-            body.email,
-            body.phone
-        );
-        return new CustomerModel(customer);
-    }
-
-    @OnlyApp()
-    @Put(":id")
-    @ApiOkResponse({
-        type: CustomerModel,
-    })
-    public async updateCustomer(
-        @Req() req: AuthenticatedRequest,
-        @Param("id") id: string,
-        @Body() body: UpdateCustomerModel
-    ): Promise<CustomerModel> {
-        const customer = await this.customerService.updateCustomer(
-            req.loginPayload.userId,
-            id,
             body
         );
         return new CustomerModel(customer);

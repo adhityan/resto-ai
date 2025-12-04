@@ -13,13 +13,17 @@ export class CustomerService {
     @Inject()
     private readonly restaurantService: RestaurantService;
 
-    public async createCustomer(
+    public async upsertCustomer(
         restaurantId: string,
-        name: string,
-        email: string,
-        phone: string | undefined
+        data: {
+            phone: string;
+            name?: string;
+            email?: string;
+            address?: string;
+            isOnCall?: boolean;
+        }
     ): Promise<Customer> {
-        this.logger.log(`Creating customer: ${name}, ${email}`);
+        this.logger.log(`Upserting customer with phone: ${data.phone}`);
 
         const restaurant =
             await this.restaurantService.findRestaurantById(restaurantId);
@@ -28,40 +32,21 @@ export class CustomerService {
                 `Restaurant with id ${restaurantId} not found`
             );
 
-        const customer = await this.databaseService.customer.create({
-            data: {
-                restaurantId,
-                name,
-                email,
-                phone,
+        const { isOnCall, ...customerData } = data;
+
+        return this.databaseService.customer.upsert({
+            where: {
+                restaurantId_phone: { restaurantId, phone: data.phone },
             },
-        });
-
-        return customer;
-    }
-
-    public async updateCustomer(
-        restaurantId: string,
-        id: string,
-        data: {
-            name?: string;
-            email?: string;
-            phone?: string;
-        }
-    ): Promise<Customer> {
-        const customer = await this.findCustomerById(id);
-        if (!customer)
-            throw new GeneralError(`Customer with id ${id} not found`);
-
-        if (customer.restaurantId !== restaurantId)
-            throw new GeneralError(
-                `Customer with id ${id} does not belong to restaurant with id ${restaurantId}`
-            );
-
-        this.logger.log(`Updating customer: ${id}`);
-        return this.databaseService.customer.update({
-            where: { id },
-            data,
+            create: {
+                restaurantId,
+                ...customerData,
+                numberOfCalls: isOnCall ? 1 : 0,
+            },
+            update: {
+                ...customerData,
+                ...(isOnCall && { numberOfCalls: { increment: 1 } }),
+            },
         });
     }
 

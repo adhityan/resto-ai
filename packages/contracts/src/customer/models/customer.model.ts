@@ -6,19 +6,19 @@ export class CustomerModel {
     id: string;
 
     @ApiProperty()
-    name: string;
+    phone: string;
+
+    @ApiProperty({ required: false })
+    name?: string;
+
+    @ApiProperty({ required: false })
+    email?: string;
+
+    @ApiProperty({ required: false })
+    address?: string;
 
     @ApiProperty()
-    phone: string | undefined;
-
-    @ApiProperty()
-    email: string | undefined;
-
-    @ApiProperty()
-    remoteCustomerId: string;
-
-    @ApiProperty()
-    stripeCustomerId: string;
+    numberOfCalls: number;
 
     @ApiProperty()
     createdAt: Date;
@@ -28,9 +28,11 @@ export class CustomerModel {
 
     constructor(customer: Customer) {
         this.id = customer.id;
-        this.name = customer.name;
-        this.phone = customer.phone ?? undefined;
+        this.phone = customer.phone;
+        this.name = customer.name ?? undefined;
         this.email = customer.email ?? undefined;
+        this.address = customer.address ?? undefined;
+        this.numberOfCalls = customer.numberOfCalls;
         this.createdAt = customer.createdAt;
         this.updatedAt = customer.updatedAt;
     }
