@@ -7,7 +7,7 @@ import { createUpdateReservationTool } from "../tools/updateReservation.js";
 import { createMakeReservationTool } from "../tools/makeReservation.js";
 import { createSearchReservationsTool } from "../tools/searchReservations.js";
 import { createCheckAvailabilityTool } from "../tools/checkAvailability.js";
-import { createGetRestaurantDetailTool } from "src/tools/getRestaurantDetail.js";
+import { createGetRestaurantDetailTool } from "../tools/getRestaurantDetail.js";
 
 const AGENT_INSTRUCTIONS = `# Personality
 You are Saar, working at Miri Mary restaurant in Amsterdam's De Pijp neighborhood.
