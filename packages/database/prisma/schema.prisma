@@ -185,10 +185,13 @@ model Call {
 }
 
 model CallTranscript {
-  id       String   @id @default(uuid())
-  speaker  Speaker
-  contents String
-  time     DateTime @default(now())
+  id String @id @default(uuid())
+
+  speaker       Speaker
+  contents      String
+  wasInterupted Boolean @default(false)
+
+  time DateTime @default(now())
 
   callId String
   call   Call   @relation(fields: [callId], references: [id], onDelete: Cascade)

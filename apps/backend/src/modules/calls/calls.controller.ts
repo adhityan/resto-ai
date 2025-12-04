@@ -18,6 +18,10 @@ import {
     CallListResponseModel,
     CallDetailModel,
     CreateCallModel,
+    EndCallModel,
+    AddTranscriptModel,
+    AddTranscriptResponseModel,
+    TranscriptListResponseModel,
 } from "@repo/contracts";
 
 import { CallsService } from "./calls.service";
@@ -82,10 +86,45 @@ export class CallsController {
         return call;
     }
 
+    @OnlyAdmin()
+    @Get(":id/transcripts")
+    @ApiOkResponse({ type: TranscriptListResponseModel })
+    async getTranscripts(
+        @Param("id") id: string
+    ): Promise<TranscriptListResponseModel> {
+        const transcripts = await this.callsService.getTranscripts(id);
+        if (!transcripts) throw new CallNotFoundError(id);
+        return transcripts;
+    }
+
     @OnlyApp()
     @Post()
     @ApiCreatedResponse({ type: CallDetailModel })
     async createCall(@Body() body: CreateCallModel): Promise<CallDetailModel> {
         return this.callsService.createCall(body);
+    }
+
+    @OnlyApp()
+    @Post(":id/end")
+    @ApiOkResponse({ type: CallDetailModel })
+    async endCall(
+        @Param("id") id: string,
+        @Body() body: EndCallModel
+    ): Promise<CallDetailModel> {
+        const call = await this.callsService.endCall(id, body.languages);
+        if (!call) throw new CallNotFoundError(id);
+        return call;
+    }
+
+    @OnlyApp()
+    @Post(":id/transcript")
+    @ApiCreatedResponse({ type: AddTranscriptResponseModel })
+    async addTranscript(
+        @Param("id") id: string,
+        @Body() body: AddTranscriptModel
+    ): Promise<AddTranscriptResponseModel> {
+        const success = await this.callsService.addTranscript(id, body);
+        if (!success) throw new CallNotFoundError(id);
+        return new AddTranscriptResponseModel();
     }
 }

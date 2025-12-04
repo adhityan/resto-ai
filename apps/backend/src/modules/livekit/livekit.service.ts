@@ -5,7 +5,7 @@ import {
     RoomAgentDispatch,
     RoomConfiguration,
 } from "livekit-server-sdk";
-import { randomUUID } from "crypto";
+import { randomUUID } from "node:crypto";
 
 import { RestaurantService } from "../restaurant/restaurant.service";
 import { RestaurantNotFoundError } from "../../errors/restaurant-not-found.error";

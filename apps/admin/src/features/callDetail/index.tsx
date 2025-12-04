@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams, useRouter } from "@tanstack/react-router";
-import { IconArrowLeft, IconCopy } from "@tabler/icons-react";
+import { IconArrowLeft, IconCopy, IconUser, IconRobot } from "@tabler/icons-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import api from "@/api";
@@ -15,6 +15,19 @@ import { ProfileDropdown } from "@/components/profile-dropdown";
 import { Search } from "@/components/search";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { calculateDurationSeconds, formatDuration } from "@/utils/format";
+
+interface TranscriptItem {
+    id: string;
+    speaker: "USER" | "AGENT";
+    contents: string;
+    wasInterupted: boolean;
+    time: string;
+}
+
+interface TranscriptListResponse {
+    items: TranscriptItem[];
+    total: number;
+}
 
 const getStatusVariant = (status: string) => {
     switch (status) {
@@ -38,6 +51,12 @@ export default function CallDetailPage() {
     const { data: call, isLoading } = useQuery<CallDetail>({
         queryKey: ["call", callId],
         queryFn: async () => (await api.get(API.CALL_DETAIL(callId))).data,
+        enabled: !!callId,
+    });
+
+    const { data: transcripts, isLoading: isLoadingTranscripts } = useQuery<TranscriptListResponse>({
+        queryKey: ["call-transcripts", callId],
+        queryFn: async () => (await api.get(API.CALL_TRANSCRIPTS(callId))).data,
         enabled: !!callId,
     });
 
@@ -104,15 +123,14 @@ export default function CallDetailPage() {
                     </div>
                 </div>
 
-                {/* Main Content Grid */}
-                <div className="grid gap-6 md:grid-cols-2">
-                    {/* Call Information Card */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Call Information</CardTitle>
-                            <CardDescription>Core call details and status</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
+                {/* Call Information Card - Full Width */}
+                <Card className="mb-6">
+                    <CardHeader>
+                        <CardTitle>Call Information</CardTitle>
+                        <CardDescription>Core call details and status</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="grid gap-4 md:grid-cols-4">
                             {call.endTime && (
                                 <div>
                                     <p className="text-muted-foreground text-sm font-medium">Duration</p>
@@ -125,128 +143,184 @@ export default function CallDetailPage() {
                                 <p className="text-muted-foreground text-sm font-medium">Language</p>
                                 <p className="text-sm">{call.language || "Unknown"}</p>
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <p className="text-muted-foreground text-sm font-medium">Start Time</p>
-                                    <p className="text-sm">{format(new Date(call.startTime), "PPpp")}</p>
-                                </div>
-                                <div>
-                                    <p className="text-muted-foreground text-sm font-medium">End Time</p>
-                                    <p className="text-sm">{call.endTime ? format(new Date(call.endTime), "PPpp") : "-"}</p>
-                                </div>
+                            <div>
+                                <p className="text-muted-foreground text-sm font-medium">Start Time</p>
+                                <p className="text-sm">{format(new Date(call.startTime), "PPpp")}</p>
                             </div>
+                            <div>
+                                <p className="text-muted-foreground text-sm font-medium">End Time</p>
+                                <p className="text-sm">{call.endTime ? format(new Date(call.endTime), "PPpp") : "-"}</p>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* Customer and Restaurant Cards - 50% each */}
+                <div className="grid gap-6 grid-cols-1 md:grid-cols-2 mb-6">
+                    {/* Customer Card */}
+                    <Card className="w-full">
+                        <CardHeader>
+                            <CardTitle>Customer</CardTitle>
+                            <CardDescription>Customer information</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            {call.customer ? (
+                                <>
+                                    {call.customer.name && (
+                                        <div>
+                                            <p className="text-muted-foreground text-sm font-medium">Name</p>
+                                            <p className="text-sm">{call.customer.name}</p>
+                                        </div>
+                                    )}
+                                    {call.customer.email && (
+                                        <div>
+                                            <p className="text-muted-foreground text-sm font-medium">Email</p>
+                                            <p className="text-sm">{call.customer.email}</p>
+                                        </div>
+                                    )}
+                                    {call.customer.phone && (
+                                        <div>
+                                            <p className="text-muted-foreground text-sm font-medium">Phone</p>
+                                            <p className="text-sm">{call.customer.phone}</p>
+                                        </div>
+                                    )}
+                                    <div>
+                                        <p className="text-muted-foreground text-sm font-medium">Customer ID</p>
+                                        <Link
+                                            to="/customers/$customerId"
+                                            params={{ customerId: call.customer.id }}
+                                            className="text-primary hover:underline font-mono text-sm"
+                                        >
+                                            {call.customer.id}
+                                        </Link>
+                                    </div>
+                                </>
+                            ) : (
+                                <p className="text-muted-foreground text-sm">No customer information available.</p>
+                            )}
                         </CardContent>
                     </Card>
 
-                    {/* Customer Card */}
-                    {call.customer && (
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Customer</CardTitle>
-                                <CardDescription>Customer information</CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                {call.customer.name && (
-                                    <div>
-                                        <p className="text-muted-foreground text-sm font-medium">Name</p>
-                                        <p className="text-sm">{call.customer.name}</p>
-                                    </div>
-                                )}
-                                {call.customer.email && (
-                                    <div>
-                                        <p className="text-muted-foreground text-sm font-medium">Email</p>
-                                        <p className="text-sm">{call.customer.email}</p>
-                                    </div>
-                                )}
-                                {call.customer.phone && (
-                                    <div>
-                                        <p className="text-muted-foreground text-sm font-medium">Phone</p>
-                                        <p className="text-sm">{call.customer.phone}</p>
-                                    </div>
-                                )}
-                                <div>
-                                    <p className="text-muted-foreground text-sm font-medium">Customer ID</p>
-                                    <Link
-                                        to="/customers/$customerId"
-                                        params={{ customerId: call.customer.id }}
-                                        className="text-primary hover:underline font-mono text-sm"
-                                    >
-                                        {call.customer.id}
-                                    </Link>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    )}
-
                     {/* Restaurant Card */}
-                    <Card>
+                    <Card className="w-full">
                         <CardHeader>
                             <CardTitle>Restaurant</CardTitle>
                             <CardDescription>Restaurant information</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
+                            {call.restaurant ? (
+                                <>
+                                    <div>
+                                        <p className="text-muted-foreground text-sm font-medium">Name</p>
+                                        <p className="text-sm">{call.restaurant.name}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-muted-foreground text-sm font-medium">Phone Number</p>
+                                        <p className="text-sm">{call.restaurant.incomingPhoneNumber}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-muted-foreground text-sm font-medium">Restaurant ID</p>
+                                        <Link
+                                            to="/settings/restaurants/$restaurantId"
+                                            params={{ restaurantId: call.restaurant.id }}
+                                            className="text-primary hover:underline font-mono text-sm"
+                                        >
+                                            {call.restaurant.id}
+                                        </Link>
+                                    </div>
+                                </>
+                            ) : (
+                                <p className="text-muted-foreground text-sm">No restaurant information available.</p>
+                            )}
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* Reservation Card - only if reservation exists */}
+                {call.zenchefReservationId && (
+                    <Card className="mb-6">
+                        <CardHeader>
+                            <CardTitle>Reservation</CardTitle>
+                            <CardDescription>Linked reservation details</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
                             <div>
-                                <p className="text-muted-foreground text-sm font-medium">Name</p>
-                                <p className="text-sm">{call.restaurant.name}</p>
-                            </div>
-                            <div>
-                                <p className="text-muted-foreground text-sm font-medium">Phone Number</p>
-                                <p className="text-sm">{call.restaurant.incomingPhoneNumber}</p>
-                            </div>
-                            <div>
-                                <p className="text-muted-foreground text-sm font-medium">Restaurant ID</p>
-                                <Link
-                                    to="/settings/restaurants/$restaurantId"
-                                    params={{ restaurantId: call.restaurant.id }}
-                                    className="text-primary hover:underline font-mono text-sm"
-                                >
-                                    {call.restaurant.id}
-                                </Link>
+                                <p className="text-muted-foreground text-sm font-medium">Zenchef Reservation ID</p>
+                                <div className="flex items-center gap-2">
+                                    <p className="font-mono text-sm">{call.zenchefReservationId}</p>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-6 w-6"
+                                        onClick={() => copyToClipboard(call.zenchefReservationId!, "Reservation ID")}
+                                    >
+                                        <IconCopy className="h-3 w-3" />
+                                    </Button>
+                                </div>
                             </div>
                         </CardContent>
                     </Card>
+                )}
 
-                    {/* Reservation Card - only if reservation exists */}
-                    {call.zenchefReservationId && (
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Reservation</CardTitle>
-                                <CardDescription>Linked reservation details</CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div>
-                                    <p className="text-muted-foreground text-sm font-medium">Zenchef Reservation ID</p>
-                                    <div className="flex items-center gap-2">
-                                        <p className="font-mono text-sm">{call.zenchefReservationId}</p>
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="h-6 w-6"
-                                            onClick={() => copyToClipboard(call.zenchefReservationId!, "Reservation ID")}
+                {/* Transcripts Card - Full Width */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Call Transcripts</CardTitle>
+                        <CardDescription>Conversation history</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        {isLoadingTranscripts ? (
+                            <p className="text-muted-foreground text-sm">Loading transcripts...</p>
+                        ) : transcripts && transcripts.items.length > 0 ? (
+                            <div className="space-y-3 max-h-96 overflow-y-auto">
+                                {transcripts.items.map((transcript) => (
+                                    <div
+                                        key={transcript.id}
+                                        className={`flex gap-3 ${transcript.speaker === "USER" ? "flex-row" : "flex-row-reverse"}`}
+                                    >
+                                        <div
+                                            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
+                                                transcript.speaker === "USER"
+                                                    ? "bg-primary text-primary-foreground"
+                                                    : "bg-muted"
+                                            }`}
                                         >
-                                            <IconCopy className="h-3 w-3" />
-                                        </Button>
+                                            {transcript.speaker === "USER" ? (
+                                                <IconUser className="h-4 w-4" />
+                                            ) : (
+                                                <IconRobot className="h-4 w-4" />
+                                            )}
+                                        </div>
+                                        <div
+                                            className={`flex-1 rounded-lg p-3 ${
+                                                transcript.speaker === "USER"
+                                                    ? "bg-primary/10 mr-12"
+                                                    : "bg-muted ml-12"
+                                            }`}
+                                        >
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <span className="text-xs font-medium">
+                                                    {transcript.speaker === "USER" ? "Customer" : "Agent"}
+                                                </span>
+                                                <span className="text-muted-foreground text-xs">
+                                                    {format(new Date(transcript.time), "HH:mm:ss")}
+                                                </span>
+                                                {transcript.wasInterupted && (
+                                                    <Badge variant="outline" className="text-xs py-0">
+                                                        Interrupted
+                                                    </Badge>
+                                                )}
+                                            </div>
+                                            <p className="text-sm">{transcript.contents}</p>
+                                        </div>
                                     </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    )}
-
-                    {/* Transcript Card - Full Width */}
-                    {call.transcript && (
-                        <Card className="md:col-span-2">
-                            <CardHeader>
-                                <CardTitle>Call Transcript</CardTitle>
-                                <CardDescription>Full conversation transcript</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="bg-muted rounded-md p-4 whitespace-pre-wrap text-sm font-mono max-h-96 overflow-y-auto">
-                                    {call.transcript}
-                                </div>
-                            </CardContent>
-                        </Card>
-                    )}
-                </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="text-muted-foreground text-sm">No transcripts available for this call.</p>
+                        )}
+                    </CardContent>
+                </Card>
             </Main>
         </>
     );

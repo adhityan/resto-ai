@@ -23,6 +23,8 @@ import { getRestaurantByPhone } from "./utils/restaurant.js";
 import { createApiClient } from "./utils/http.js";
 import { CallModel, CustomerModel } from "@repo/contracts";
 import { AxiosInstance } from "axios";
+import { Speaker } from "@repo/database";
+import { CallTranscriptModel } from "../../../packages/database/dist/generated/prisma/models.js";
 
 if (process.argv.includes("dev")) {
     const token = await createToken("test-room", "user_123");
@@ -97,6 +99,45 @@ async function createCallInDatabase(
     return data;
 }
 
+async function endCallInDatabase(
+    session: voice.AgentSession,
+    client: AxiosInstance,
+    callId: string
+) {
+    session.on(voice.AgentSessionEventTypes.Close, async () => {
+        await client.post<CallModel>(`/calls/${callId}/end`, {
+            languages: ["en"],
+        });
+    });
+}
+
+async function addCallTranscriptToDatabase(
+    session: voice.AgentSession,
+    client: AxiosInstance,
+    callId: string
+) {
+    session.on(
+        voice.AgentSessionEventTypes.ConversationItemAdded,
+        async (ev) => {
+            const contents = ev.item.textContent;
+            if (!contents) return;
+
+            const speaker =
+                ev.item.role === "user" ? Speaker.USER : Speaker.AGENT;
+            const wasInterupted = ev.item.interrupted;
+
+            await client.post<CallTranscriptModel>(
+                `/calls/${callId}/transcript`,
+                {
+                    speaker,
+                    contents,
+                    wasInterupted,
+                }
+            );
+        }
+    );
+}
+
 export default defineAgent({
     prewarm: async (proc: JobProcess) => {
         proc.userData.vad = await silero.VAD.load();
@@ -142,8 +183,10 @@ export default defineAgent({
 
         console.log(`Starting session for: ${customer.name ?? customer.phone}`);
         const session = createSession(ctx);
-        // Metrics collection
+
         createUsageCollector(ctx, session);
+        endCallInDatabase(session, client, call.id);
+        addCallTranscriptToDatabase(session, client, call.id);
 
         // Start the session with the restaurant standard agent
         await session.start({

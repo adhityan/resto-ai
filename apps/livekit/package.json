@@ -26,7 +26,8 @@
         "@livekit/agents-plugin-silero": "^1.0.24",
         "@livekit/noise-cancellation-node": "^0.1.9",
         "@repo/utils": "*",
-        "@repo/contracts": "*"
+        "@repo/contracts": "*",
+        "@repo/database": "*"
     },
     "devDependencies": {
         "tsx": "^4.21.0",

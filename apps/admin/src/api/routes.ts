@@ -8,6 +8,7 @@ export const API = {
     // Calls
     CALLS: "/calls",
     CALL_DETAIL: (id: string) => `/calls/${id}`,
+    CALL_TRANSCRIPTS: (id: string) => `/calls/${id}/transcripts`,
     ACTIVE_CALLS_COUNT: "/calls/active-count",
 
     // Reservations (from local database via admin API)

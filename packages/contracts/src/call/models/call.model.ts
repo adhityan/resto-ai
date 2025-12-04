@@ -15,13 +15,10 @@ export class CallModel {
     endTime: Date | undefined;
 
     @ApiPropertyOptional()
-    duration: number | undefined; // in seconds
+    duration: number | undefined; // in seconds (computed)
 
     @ApiPropertyOptional()
-    transcript: string | undefined;
-
-    @ApiPropertyOptional()
-    language: string | undefined;
+    languages: string | undefined;
 
     @ApiProperty()
     escalationRequested: boolean;
@@ -46,15 +43,17 @@ export class CallModel {
         this.status = call.status;
         this.startTime = call.startTime;
         this.endTime = call.endTime ?? undefined;
-        this.duration = call.duration ?? undefined;
-        this.transcript = call.transcript ?? undefined;
-        this.language = call.language ?? undefined;
+        this.duration = call.endTime
+            ? Math.floor(
+                  (call.endTime.getTime() - call.startTime.getTime()) / 1000
+              )
+            : undefined;
+        this.languages = call.languages;
         this.escalationRequested = call.escalationRequested;
-        this.customerId = call.customerId ?? undefined;
+        this.customerId = call.customerId;
         this.restaurantId = call.restaurantId;
         this.zenchefReservationId = call.zenchefReservationId ?? undefined;
         this.createdAt = call.createdAt;
         this.updatedAt = call.updatedAt;
     }
 }
-
