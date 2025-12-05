@@ -34,7 +34,12 @@ export function getFieldFromContext(
     }
 }
 
-export async function endCall(context?: JobContext) {
+export async function endCall(contextOrName?: JobContext | string) {
+    let context: JobContext | undefined = undefined;
+    let roomNameFromInput: string | undefined = undefined;
+    if (typeof contextOrName === "string") roomNameFromInput = contextOrName;
+    else context = contextOrName;
+
     const jobContext = context ?? getJobContext();
     if (!jobContext) {
         console.error("Job context not found!");
@@ -42,7 +47,8 @@ export async function endCall(context?: JobContext) {
     }
 
     const roomServiceClient = getRoomServiceClient();
-    const roomName = jobContext.room.name ?? context?.job.room?.name;
+    const roomName =
+        roomNameFromInput ?? jobContext.room.name ?? context?.job.room?.name;
     if (roomName) {
         console.log(`Hanging up call for room: ${roomName}...`);
         await roomServiceClient.deleteRoom(roomName);

@@ -1,14 +1,17 @@
 import { voice } from "@livekit/agents";
-import { TemplateRenderer } from "@repo/utils";
+import type { AxiosInstance } from "axios";
 import { createCancelReservationTool } from "../tools/cancelReservation.js";
 import { createUpdateReservationTool } from "../tools/updateReservation.js";
 import { createMakeReservationTool } from "../tools/makeReservation.js";
 import { createSearchReservationsTool } from "../tools/searchReservations.js";
 import { createCheckAvailabilityTool } from "../tools/checkAvailability.js";
 import { createGetRestaurantDetailTool } from "../tools/getRestaurantDetail.js";
+
 import { CustomerModel } from "@repo/contracts";
+import { TemplateRenderer } from "@repo/utils";
+
 import { describeCustomerKnowledge } from "../utils/customer.js";
-import type { AxiosInstance } from "axios";
+import { endCallTool } from "../tools/endCallTool.js";
 
 const AGENT_INSTRUCTIONS = `# Personality
 You are Saar, working at Miri Mary restaurant in Amsterdam's De Pijp neighborhood.
@@ -302,10 +305,12 @@ After completing any task, ask: "Can I help you with anything else today?"
 const GREETING_TEMPLATE = `Hey! You've got Miri Mary. This is Saar. How can I help you?`;
 
 export class RestaurantStandardAgent extends voice.Agent {
-    private readonly renderer: TemplateRenderer;
-
-    constructor(options: { client: AxiosInstance; customer: CustomerModel }) {
-        const { client, customer } = options;
+    constructor(options: {
+        roomName: string;
+        client: AxiosInstance;
+        customer: CustomerModel;
+    }) {
+        const { client, customer, roomName } = options;
 
         // Create template renderer with all parameters
         const renderer = new TemplateRenderer({
@@ -322,14 +327,13 @@ export class RestaurantStandardAgent extends voice.Agent {
             checkAvailability: createCheckAvailabilityTool(client),
             searchReservations: createSearchReservationsTool(client),
             getRestaurantDetail: createGetRestaurantDetailTool(client),
+            endCall: endCallTool(roomName),
         };
 
         super({
             instructions: renderer.render(AGENT_INSTRUCTIONS),
             tools,
         });
-
-        this.renderer = renderer;
     }
 
     override async onEnter(): Promise<void> {

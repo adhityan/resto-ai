@@ -21,6 +21,7 @@ import {
     IconMicrophone,
     IconMicrophoneOff,
 } from "@tabler/icons-react";
+import { useKrispNoiseFilter } from "@livekit/components-react/krisp";
 
 import api from "@/api";
 import { API } from "@/api/routes";
@@ -145,6 +146,24 @@ function CallContent({
 }) {
     const connectionState = useConnectionState();
     const [isMuted, setIsMuted] = useState(false);
+    const {
+        isNoiseFilterEnabled,
+        isNoiseFilterPending,
+        setNoiseFilterEnabled,
+    } = useKrispNoiseFilter();
+    const krispInitialized = useRef(false);
+
+    // Automatically enable Krisp noise filter on mount
+    useEffect(() => {
+        if (
+            !krispInitialized.current &&
+            !isNoiseFilterEnabled &&
+            !isNoiseFilterPending
+        ) {
+            krispInitialized.current = true;
+            setNoiseFilterEnabled(true);
+        }
+    }, [isNoiseFilterEnabled, isNoiseFilterPending, setNoiseFilterEnabled]);
 
     const toggleMute = useCallback(() => {
         const localParticipant = room.localParticipant;

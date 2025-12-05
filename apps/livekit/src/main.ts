@@ -17,49 +17,19 @@ import { fileURLToPath } from "node:url";
 import { AxiosInstance } from "axios";
 import "dotenv/config";
 
+import { CallModel, CustomerModel } from "@repo/contracts";
+import { Speaker, CallTranscript } from "@repo/database";
+
 import { createApiClient, getErrorMessage } from "./utils/http.js";
 import { RestaurantStandardAgent } from "./agents/restaurantStandard.js";
 import { endCall, getFieldFromContext } from "./utils/call.js";
 import { getRestaurantByPhone } from "./utils/restaurant.js";
-import { CallModel, CustomerModel } from "@repo/contracts";
-import { Speaker, CallTranscript } from "@repo/database";
 
 console.log("LIVEKIT_URL: ", process.env.LIVEKIT_URL);
 // if (process.argv.includes("dev")) {
 //     const token = await createToken("test-room", "user_123");
 //     console.log("Token: ", token);
 // }
-
-function createSession(ctx: JobContext) {
-    return new voice.AgentSession({
-        stt: new deepgram.STT({
-            detectLanguage: true,
-            model: "nova-3",
-        }),
-
-        tts: new elevenlabs.TTS({
-            modelID: "eleven_flash_v2_5",
-            voice: {
-                name: "Hope",
-                id: "zGjIP4SZlMnY9m93k97r",
-                category: "conversational",
-            },
-        }),
-
-        llm: new gemini.LLM({
-            vertexai: true,
-            model: "gemini-2.5-flash",
-        }),
-
-        turnDetection: new livekit.turnDetector.MultilingualModel(),
-        vad: ctx.proc.userData.vad! as silero.VAD,
-        voiceOptions: {
-            minInterruptionWords: 1,
-            preemptiveGeneration: false,
-            userAwayTimeout: 30,
-        },
-    });
-}
 
 function createUsageCollector(ctx: JobContext, session: voice.AgentSession) {
     const usageCollector = new metrics.UsageCollector();
@@ -149,6 +119,37 @@ function setupSessionListeners(
     });
 }
 
+function createSession(ctx: JobContext) {
+    return new voice.AgentSession({
+        stt: new deepgram.STT({
+            detectLanguage: true,
+            model: "nova-3",
+        }),
+
+        tts: new elevenlabs.TTS({
+            modelID: "eleven_flash_v2_5",
+            voice: {
+                name: "Hope",
+                id: "zGjIP4SZlMnY9m93k97r",
+                category: "conversational",
+            },
+        }),
+
+        llm: new gemini.LLM({
+            vertexai: true,
+            model: "gemini-2.5-flash",
+        }),
+
+        turnDetection: new livekit.turnDetector.MultilingualModel(),
+        vad: ctx.proc.userData.vad! as silero.VAD,
+        voiceOptions: {
+            preemptiveGeneration: true,
+            minInterruptionWords: 1,
+            userAwayTimeout: 30,
+        },
+    });
+}
+
 export default defineAgent({
     prewarm: async (proc: JobProcess) => {
         proc.userData.vad = await silero.VAD.load();
@@ -157,7 +158,7 @@ export default defineAgent({
         console.log(
             "Job received for room name: ",
             ctx.job?.room?.name,
-            "with metadata: ",
+            "and with metadata: ",
             ctx.job?.metadata
         );
 
@@ -206,6 +207,7 @@ export default defineAgent({
             agent: new RestaurantStandardAgent({
                 client,
                 customer,
+                roomName: ctx.job?.room?.name!,
             }),
             room: ctx.room,
             outputOptions: {
