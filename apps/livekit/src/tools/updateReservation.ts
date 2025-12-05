@@ -5,9 +5,11 @@ import { getErrorMessage } from "../utils/http.js";
 
 export function createUpdateReservationTool(client: AxiosInstance) {
     return llm.tool({
-        description: `Modify an existing reservation. Supports partial updates—only include fields you want to change. Only call after: (1) retrieving the booking via search-reservations to obtain bookingId, (2) checking availability if changing date/time/party size, (3) confirming the update details with customer.
+        description: `Modify an existing reservation. Supports partial updates—only include fields you want to change. Non-provided fields retain their existing values. Only call after: (1) retrieving the booking via search-reservations to obtain bookingId and verify canModify is true, (2) checking availability if changing date/time/party size, (3) confirming the update details with customer.
 
-IMPORTANT: If changing date or time to a slot with "isOfferRequired: true", you must include an offerId from the requiredOfferIds array. The existing offer on the booking may be reused if it's in the valid list, otherwise present offers to customer.`,
+OFFER REQUIREMENT: If changing date or time to a slot with "isOfferRequired: true", you must include an offerId from the requiredOfferIds array. The existing offer on the booking may be reused if it's in the valid list, otherwise present offers to customer.
+
+RESPONSE: Includes "description" with update confirmation, "canModify"/"canCancel" flags.`,
         parameters: z.object({
             bookingId: z
                 .string()

@@ -7,7 +7,12 @@ export function createSearchReservationsTool(client: AxiosInstance) {
     return llm.tool({
         description: `Search for reservations using any combination of phone, email, name, and/or date. All parameters are optional - you can call this tool with any subset of parameters or even without any parameters to get recently made reservations. Uses fuzzy matching on names. Empty result means no matching reservations found.
 
-Each reservation in the response may include offerId, offerName, and offerDescription if an offer was selected during booking.`,
+NOTE: Only searches reservations from the last 7 days. Older reservations are not returned.
+
+RESPONSE: Includes "description" with search summary. Each reservation includes:
+- "canModify" / "canCancel" flags - check these before attempting modifications or cancellations
+- "statusDescription" - human-readable status
+- "offerId", "offerName", "offerDescription" if an offer was selected during booking`,
         parameters: z.object({
             date: z
                 .string()

@@ -1,15 +1,17 @@
 import { voice } from "@livekit/agents";
 import type { AxiosInstance } from "axios";
-import { createCancelReservationTool } from "../tools/cancelReservation.js";
-import { createUpdateReservationTool } from "../tools/updateReservation.js";
-import { createMakeReservationTool } from "../tools/makeReservation.js";
-import { createSearchReservationsTool } from "../tools/searchReservations.js";
-import { createCheckAvailabilityTool } from "../tools/checkAvailability.js";
-import { createGetRestaurantDetailTool } from "../tools/getRestaurantDetail.js";
 
 import { CustomerModel } from "@repo/contracts";
 import { TemplateRenderer } from "@repo/utils";
 
+import { createCancelReservationTool } from "../tools/cancelReservation.js";
+import { createUpdateReservationTool } from "../tools/updateReservation.js";
+import { createSearchReservationsTool } from "../tools/searchReservations.js";
+import { createGetRestaurantDetailTool } from "../tools/getRestaurantDetail.js";
+import { createGetReservationByIdTool } from "../tools/getReservationById.js";
+import { createCheckAvailabilityTool } from "../tools/checkAvailability.js";
+import { createTransferToNumberTool } from "../tools/transferToNumber.js";
+import { createMakeReservationTool } from "../tools/makeReservation.js";
 import { describeCustomerKnowledge } from "../utils/customer.js";
 import { endCallTool } from "../tools/endCallTool.js";
 
@@ -62,6 +64,8 @@ Caller phone number: {{callerPhoneNumber}} (with country code)
 
 3. **If available**:
 - Confirm where the customer would like to be seated (restaurant, bar, patio, etc) and remember the room id of that room
+- **Offer selection (if required):** If check-availability response shows "isOfferRequired: true" for the time slot, present the available offers to the customer and ask which they prefer. Include their chosen offerId when making the reservation.
+- **Prepayment notice:** If seating area shows "paymentRequiredForConfirmation", inform customer: "Just so you know, this booking requires a deposit. You'll receive a payment link by email, and your reservation will be confirmed once that's completed."
 - Collect name, phone, email, special requests (one at a time)
 - Call make-reservation tool
 - Confirm: "All set!"
@@ -105,6 +109,7 @@ Caller phone number: {{callerPhoneNumber}} (with country code)
 
 
 # Tools
+All tools return a \`description\` field with a human-readable summary of the result. Use this to communicate with the customer.
 
 ## \`get-restaurant-detail\`
 **When to use:** To get the details of the restaurant
@@ -151,11 +156,27 @@ Caller phone number: {{callerPhoneNumber}} (with country code)
 **When to use:** To cancel existing reservations
 **Prerequisites:** Must have booking_id from search-reservations
 **Usage:**
-- Confirm cancellation explicitly before calling tool
+- Check \`canCancel\` flag from search-reservations first
+- If \`canCancel\` is false: Say "I'm not able to cancel this booking through our system. Let me connect you with our manager who can help." Then call transfer_to_number.
+- If \`canCancel\` is true: Confirm cancellation explicitly before calling tool
 - Confirm: "All set! Reservation cancelled"
 
 ## \`get-reservation-by-id\`
 **When to use:** To retrieve specific booking details when you have the booking_id
+**Usage:**
+- Use when you need full details of a specific reservation
+- Response includes offer info if an offer was selected
+
+## \`transfer_to_number\`
+**When to use:** To connect customer with restaurant manager
+**Usage:**
+- For large parties (11+ guests)
+- For non-cancellable bookings (\`canCancel: false\`)
+- After repeated tool failures
+- For any situation requiring human assistance
+- Say something like "Let me connect you with our manager" before calling
+- No parameters needed - the manager's number is configured automatically
+
 ## Critical Tool Usage Rules
 **Rule:** When you say "let me check", "one moment", or similar, you MUST immediately call the tool and respond back. Tools return instantly - use results immediately. Do NOT pause and wait for customer. This step is important.
 
@@ -235,6 +256,7 @@ Never list more than 2 alternative time slots.
 Never mention error codes, API issues, or technical details to customers.
 Never attempt past bookings - politely explain not possible, offer future times.
 Never offer to help parties of 11+ people - transfer immediately to manager. This step is important.
+Never ask the customer to "call the restaurant" - you ARE the restaurant phone. For any escalation, use transfer_to_number to connect them with a human. This step is important.
 
 
 
@@ -251,9 +273,10 @@ Never offer to help parties of 11+ people - transfer immediately to manager. Thi
 2. Transfer to human agent immediately
 
 **Transfer failure:**
-If transfer_to_number tool fails (e.g., "Transfer to number tool is only available for phone calls powered by Twilio"):
-1. Say: "I'm sorry, I'm having trouble transferring your call. Could you please call our manager directly at +31 020 233 9587? They'll be happy to help you."
-2. Do NOT attempt to transfer again
+If transfer_to_number tool fails:
+1. Say: "I'm sorry, I'm having some technical difficulties with the transfer. Our manager will call you back shortly at your number. Is there anything else I can note down for them?"
+2. Take any additional notes from the customer
+3. End the call politely
 
 ## Unresponsive customers at call start
 At the very beginning of a call and only after you have said your greeting, if the customer doesn't respond:
@@ -309,8 +332,9 @@ export class RestaurantStandardAgent extends voice.Agent {
         roomName: string;
         client: AxiosInstance;
         customer: CustomerModel;
+        managerPhone: string;
     }) {
-        const { client, customer, roomName } = options;
+        const { client, customer, roomName, managerPhone } = options;
 
         // Create template renderer with all parameters
         const renderer = new TemplateRenderer({
@@ -327,6 +351,11 @@ export class RestaurantStandardAgent extends voice.Agent {
             checkAvailability: createCheckAvailabilityTool(client),
             searchReservations: createSearchReservationsTool(client),
             getRestaurantDetail: createGetRestaurantDetailTool(client),
+            getReservationById: createGetReservationByIdTool(client),
+            transferToNumber: createTransferToNumberTool(
+                roomName,
+                managerPhone
+            ),
             endCall: endCallTool(roomName),
         };
 

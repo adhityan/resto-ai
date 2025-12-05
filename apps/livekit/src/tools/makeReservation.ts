@@ -7,9 +7,11 @@ export function createMakeReservationTool(client: AxiosInstance) {
     return llm.tool({
         description: `Create a new reservation. Only call after: (1) checking availability and confirming a slot is available, (2) collecting all required information (name, phone, email, date, time, party size), and (3) verbally confirming details with the customer. For time, guide customers to book at :00, :15, :30, or :45 intervals.
 
-IMPORTANT: If the availability check showed "isOfferRequired: true" for the time slot, you MUST include an offerId from the "requiredOfferIds" array. Present the available offers to the customer and let them choose.
+OFFER REQUIREMENT: If the availability check showed "isOfferRequired: true" for the time slot, you MUST include an offerId from the "requiredOfferIds" array. Present the available offers to the customer and let them choose.
 
-If prepayment is required (paymentRequiredForConfirmation), inform customer that a payment link will be sent to their email and the reservation will be pending until payment is completed.`,
+PREPAYMENT: If prepayment is required (paymentRequiredForConfirmation), inform customer that a payment link will be sent to their email. The reservation response status will be "waiting" until payment is completed.
+
+RESPONSE: Includes "description" with booking confirmation, "canModify"/"canCancel" flags, and "seatingAreaName".`,
         parameters: z.object({
             date: z
                 .string()

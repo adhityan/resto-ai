@@ -123,6 +123,7 @@ function createSession(ctx: JobContext) {
     return new voice.AgentSession({
         stt: new deepgram.STT({
             detectLanguage: true,
+            smartFormat: true,
             model: "nova-3",
         }),
 
@@ -143,7 +144,7 @@ function createSession(ctx: JobContext) {
         turnDetection: new livekit.turnDetector.MultilingualModel(),
         vad: ctx.proc.userData.vad! as silero.VAD,
         voiceOptions: {
-            preemptiveGeneration: true,
+            preemptiveGeneration: false,
             minInterruptionWords: 1,
             userAwayTimeout: 30,
         },
@@ -208,6 +209,7 @@ export default defineAgent({
                 client,
                 customer,
                 roomName: ctx.job?.room?.name!,
+                managerPhone: restaurantDetails.restaurantManagerPhone,
             }),
             room: ctx.room,
             outputOptions: {
@@ -216,6 +218,8 @@ export default defineAgent({
             inputOptions: {
                 noiseCancellation: BackgroundVoiceCancellation(),
                 closeOnDisconnect: true,
+                videoEnabled: false,
+                textEnabled: false,
             },
         });
     },

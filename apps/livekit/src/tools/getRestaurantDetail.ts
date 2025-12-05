@@ -6,7 +6,7 @@ export function createGetRestaurantDetailTool(client: AxiosInstance) {
     let cachedData: RestaurantModel;
 
     return llm.tool({
-        description: `Get all the details about the restaurant. This includes the restaurant name, address, general information, phone number and website.`,
+        description: `Get all the details about the restaurant. Returns name, address, phone number, website, opening hours, and general information.`,
         execute: async () => {
             if (cachedData) return cachedData;
             const { data } = await client.get(`/restaurants/me`);
