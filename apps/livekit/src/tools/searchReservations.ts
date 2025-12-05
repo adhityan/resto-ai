@@ -5,7 +5,9 @@ import { getErrorMessage } from "../utils/http.js";
 
 export function createSearchReservationsTool(client: AxiosInstance) {
     return llm.tool({
-        description: `Search for reservations using any combination of phone, email, name, and/or date. All parameters are optional - you can call this tool with any subset of parameters or even without any parameters to get recently made reservations. Uses fuzzy matching on names. Empty result means no matching reservations found.`,
+        description: `Search for reservations using any combination of phone, email, name, and/or date. All parameters are optional - you can call this tool with any subset of parameters or even without any parameters to get recently made reservations. Uses fuzzy matching on names. Empty result means no matching reservations found.
+
+Each reservation in the response may include offerId, offerName, and offerDescription if an offer was selected during booking.`,
         parameters: z.object({
             date: z
                 .string()
@@ -34,7 +36,10 @@ export function createSearchReservationsTool(client: AxiosInstance) {
         }),
         execute: async (payload) => {
             try {
-                const { data } = await client.post("/reservations/search", payload);
+                const { data } = await client.post(
+                    "/reservations/search",
+                    payload
+                );
                 return data;
             } catch (error) {
                 throw new Error(`error: ${getErrorMessage(error)}`);

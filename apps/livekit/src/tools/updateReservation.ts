@@ -5,7 +5,9 @@ import { getErrorMessage } from "../utils/http.js";
 
 export function createUpdateReservationTool(client: AxiosInstance) {
     return llm.tool({
-        description: `Modify an existing reservation. Supports partial updates—only include fields you want to change. Only call after: (1) retrieving the booking via search-reservations to obtain bookingId, (2) checking availability if changing date/time/party size, (3) confirming the update details with customer.`,
+        description: `Modify an existing reservation. Supports partial updates—only include fields you want to change. Only call after: (1) retrieving the booking via search-reservations to obtain bookingId, (2) checking availability if changing date/time/party size, (3) confirming the update details with customer.
+
+IMPORTANT: If changing date or time to a slot with "isOfferRequired: true", you must include an offerId from the requiredOfferIds array. The existing offer on the booking may be reused if it's in the valid list, otherwise present offers to customer.`,
         parameters: z.object({
             bookingId: z
                 .string()
@@ -65,6 +67,12 @@ export function createUpdateReservationTool(client: AxiosInstance) {
                 .optional()
                 .describe(
                     "New customer name. Only include if customer wants to change the name on the reservation."
+                ),
+            offerId: z
+                .number()
+                .optional()
+                .describe(
+                    "ID of the selected offer. Required when changing date/time to a slot with isOfferRequired: true. Must be one of the IDs from requiredOfferIds array."
                 ),
         }),
         execute: async ({ bookingId, ...payload }) => {

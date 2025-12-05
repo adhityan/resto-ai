@@ -193,7 +193,7 @@ export class ReservationsService {
 
             return new AvailabilityResponseModel({
                 isRequestedSlotAvailable: false,
-                offers: [],
+                offers: undefined,
                 otherAvailableSlotsForThatDay: [],
                 nextAvailableDate: null,
                 description,
@@ -215,7 +215,6 @@ export class ReservationsService {
             time
         );
 
-        console.log("availability", availability);
         // Build structured description for LLM
         const parts: string[] = [];
 
@@ -236,9 +235,14 @@ export class ReservationsService {
                     parts.push(`SEATING OPTIONS FOR ${time}:`);
                     availability.availableRoomTypesOnRequestedTime.forEach(
                         (room, idx) => {
-                            parts.push(
-                                `  ${idx + 1}. ${room.name} (ID: ${room.id}, Capacity: ${room.maxCapacity}${room.description ? `, ${room.description}` : ""})`
-                            );
+                            let roomInfo = `  ${idx + 1}. ${room.name} (ID: ${room.id}, Capacity: ${room.maxCapacity}${room.description ? `, ${room.description}` : ""})`;
+                            if (room.paymentRequiredForConfirmation) {
+                                roomInfo += ` [PREPAYMENT]`;
+                            }
+                            if (room.notCancellable) {
+                                roomInfo += ` [NON-CANCELLABLE]`;
+                            }
+                            parts.push(roomInfo);
                         }
                     );
                 } else {
@@ -251,8 +255,74 @@ export class ReservationsService {
             }
         }
 
-        // Section 2: Available offers
-        if (availability.offers.length > 0) {
+        // Check for prepayment and cancellation flags
+        const hasPrepayment = availability.otherAvailableSlotsForThatDay.some(
+            (slot) =>
+                slot.seatingAreas.some((s) => s.paymentRequiredForConfirmation)
+        );
+        const hasNonCancellableSlots =
+            availability.otherAvailableSlotsForThatDay.some((slot) =>
+                slot.seatingAreas.some((s) => s.notCancellable)
+            );
+        const anyOfferRequired =
+            availability.otherAvailableSlotsForThatDay.some(
+                (slot) => slot.isOfferRequired
+            );
+
+        // Section: Prepayment notice
+        if (hasPrepayment) {
+            const prepaymentSlot =
+                availability.otherAvailableSlotsForThatDay.find((slot) =>
+                    slot.seatingAreas.some(
+                        (s) => s.paymentRequiredForConfirmation
+                    )
+                );
+            const chargePerGuest =
+                prepaymentSlot?.seatingAreas.find(
+                    (s) => s.paymentRequiredForConfirmation
+                )?.paymentRequiredForConfirmation || 0;
+            parts.push(`\nPREPAYMENT NOTICE:`);
+            parts.push(
+                `A prepayment of €${chargePerGuest / 100} per person is required for this booking.`
+            );
+            parts.push(
+                `Total prepayment: €${(chargePerGuest * numberOfPeople) / 100}`
+            );
+            parts.push(
+                `After booking, a payment link will be sent to the customer's email.`
+            );
+            parts.push(
+                `The reservation will remain PENDING until payment is completed.`
+            );
+        }
+
+        // Section: Cancellation restriction notice
+        if (hasNonCancellableSlots) {
+            parts.push(`\nCANCELLATION RESTRICTION:`);
+            parts.push(
+                `Some time slots are marked as "notCancellable: true" in their seating areas.`
+            );
+            parts.push(
+                `Bookings for these slots cannot be cancelled by the customer after creation.`
+            );
+        }
+
+        // Section: Offer requirement notice
+        if (anyOfferRequired) {
+            parts.push(`\nOFFER REQUIREMENT:`);
+            parts.push(
+                `Some time slots require selecting an offer (isOfferRequired: true).`
+            );
+            parts.push(
+                `Check the "requiredOfferIds" field for valid offer IDs.`
+            );
+            parts.push(
+                `Include "offerId" when creating a reservation for these slots.`
+            );
+        }
+
+        // Section 2: Available offers (only show if offers exist)
+        if (availability.offers && availability.offers.length > 0) {
             parts.push(
                 `\nAVAILABLE OFFERS (${availability.offers.length} matching your party size):`
             );
@@ -267,8 +337,6 @@ export class ReservationsService {
                     parts.push(`     ${desc}`);
                 }
             });
-        } else {
-            parts.push(`\nAVAILABLE OFFERS: None matching your party size`);
         }
 
         // Section 3: Other available time slots for the day
@@ -281,9 +349,24 @@ export class ReservationsService {
                     slot.seatingAreas.length > 0
                         ? slot.seatingAreas.map((s) => s.name).join(", ")
                         : "No configured seating areas";
-                parts.push(
-                    `  - ${slot.time}: ${slot.seatingAreas.length} seating area(s) [${seatingList}]`
+                let slotInfo = `  - ${slot.time}: ${slot.seatingAreas.length} seating area(s) [${seatingList}]`;
+
+                // Add offer requirement indicator
+                if (slot.isOfferRequired) {
+                    slotInfo += ` [OFFER REQUIRED - IDs: ${slot.requiredOfferIds?.join(", ")}]`;
+                }
+
+                // Add prepayment/cancellation indicators
+                const slotHasPayment = slot.seatingAreas.some(
+                    (s) => s.paymentRequiredForConfirmation
                 );
+                const slotHasNonCancel = slot.seatingAreas.some(
+                    (s) => s.notCancellable
+                );
+                if (slotHasPayment) slotInfo += ` [PREPAYMENT]`;
+                if (slotHasNonCancel) slotInfo += ` [NON-CANCELLABLE]`;
+
+                parts.push(slotInfo);
             });
         } else {
             parts.push(`\nOTHER AVAILABLE TIMES ON ${date}: None available`);
@@ -315,14 +398,23 @@ export class ReservationsService {
         // Section 5: Important notes
         parts.push(`\nIMPORTANT NOTES:`);
         parts.push(
-            `- Seating area availability is provided in "availableRoomTypesOnRequestedTime" (for requested time) and "otherAvailableSlotsForThatDay" (per time slot)`
+            `- Use seating area ID when making a booking to specify preferred room`
         );
-        parts.push(
-            `- Use the seating area ID when making a booking to specify the preferred room`
-        );
-        parts.push(
-            `- Each time slot may have different seating areas available based on restaurant configuration`
-        );
+        if (anyOfferRequired) {
+            parts.push(
+                `- Include "offerId" for time slots marked with isOfferRequired: true`
+            );
+        }
+        if (hasPrepayment) {
+            parts.push(
+                `- Bookings with prepayment will be PENDING until payment is completed`
+            );
+        }
+        if (hasNonCancellableSlots) {
+            parts.push(
+                `- Non-cancellable bookings cannot be cancelled by the customer`
+            );
+        }
 
         const description = parts.join("\n");
 
@@ -508,6 +600,7 @@ export class ReservationsService {
      * @param roomId - Optional seating area ID
      * @param allergies - Optional allergies or dietary restrictions
      * @param callId - Optional call ID to associate with the reservation
+     * @param offerId - Optional offer ID (required when is_offer_required is true)
      * @returns Complete booking object with booking ID and human-readable description
      */
     async createReservation(
@@ -521,16 +614,50 @@ export class ReservationsService {
         email?: string,
         roomId?: string,
         allergies?: string,
-        callId?: string
+        callId?: string,
+        offerId?: number
     ): Promise<BookingObjectModel> {
         // Normalize phone number
         const normalizedPhone = normalizePhoneNumber(phone);
 
         this.logger.log(
-            `For restaurant "${restaurantId}", creating reservation for "${numberOfCustomers}" people on "${date}" at "${time}" with name "${name}" and phone "${normalizedPhone}" (original: "${phone}"). Optional comments: "${comments}". Optional email: "${email}". Optional roomId: "${roomId}". Optional allergies: "${allergies}". Optional callId: "${callId}".`
+            `For restaurant "${restaurantId}", creating reservation for "${numberOfCustomers}" people on "${date}" at "${time}" with name "${name}" and phone "${normalizedPhone}" (original: "${phone}"). Optional comments: "${comments}". Optional email: "${email}". Optional roomId: "${roomId}". Optional allergies: "${allergies}". Optional callId: "${callId}". Optional offerId: "${offerId}".`
         );
 
-        // Upsert customer (phone is the unique identifier)
+        // Step 1: Check availability to determine offer requirements
+        const availability = await this.checkAvailability(
+            restaurantId,
+            date,
+            numberOfCustomers,
+            time
+        );
+
+        // Step 2: Find the requested time slot in availability response
+        const requestedSlot = availability.otherAvailableSlotsForThatDay.find(
+            (slot) => slot.time === time
+        );
+
+        // Step 3: Validate offer requirement
+        if (requestedSlot?.isOfferRequired) {
+            if (!offerId) {
+                const validOfferIds =
+                    requestedSlot.requiredOfferIds?.join(", ") || "none";
+                throw new GeneralError(
+                    `An offer must be selected for this time slot. Valid offer IDs: ${validOfferIds}`
+                );
+            }
+
+            if (
+                requestedSlot.requiredOfferIds &&
+                !requestedSlot.requiredOfferIds.includes(offerId)
+            ) {
+                throw new GeneralError(
+                    `Invalid offer ID ${offerId}. Valid offers for this slot: ${requestedSlot.requiredOfferIds.join(", ")}`
+                );
+            }
+        }
+
+        // Step 4: Upsert customer (phone is the unique identifier)
         await this.customerService.upsertCustomer(restaurantId, {
             phone: normalizedPhone,
             name,
@@ -540,6 +667,7 @@ export class ReservationsService {
         const { zenchefId, apiToken } =
             await this.getRestaurantCredentials(restaurantId);
 
+        // Step 5: Get Zenchef room ID if roomId provided
         let zenchefRoomId: number | undefined;
         if (roomId) {
             const seatingAreas =
@@ -552,6 +680,7 @@ export class ReservationsService {
             }
         }
 
+        // Step 6: Create the booking with optional offer
         const booking = await this.zenchefService.createReservation(
             zenchefId,
             apiToken,
@@ -563,10 +692,40 @@ export class ReservationsService {
             comments,
             email,
             zenchefRoomId,
-            allergies
+            allergies,
+            offerId
         );
 
-        // Sync to local database
+        // Step 7: Check if prepayment was required
+        const hasPrepayment = requestedSlot?.seatingAreas.some(
+            (area) => area.paymentRequiredForConfirmation
+        );
+
+        if (hasPrepayment) {
+            try {
+                const fullBooking = await this.zenchefService.getBookingById(
+                    zenchefId,
+                    apiToken,
+                    booking.bookingId
+                );
+
+                if (fullBooking.url) {
+                    this.logger.log(
+                        `Prepayment URL for booking ${booking.bookingId}: ${fullBooking.url}`
+                    );
+                } else {
+                    this.logger.log(
+                        `Prepayment required for booking ${booking.bookingId} but no URL received yet`
+                    );
+                }
+            } catch (error) {
+                this.logger.warn(
+                    `Failed to fetch booking details for prepayment URL: ${error}`
+                );
+            }
+        }
+
+        // Step 8: Sync to local database
         await this.syncReservationToDb(restaurantId, booking.bookingId, {
             status: booking.status,
             date: booking.date,
@@ -585,12 +744,12 @@ export class ReservationsService {
             `Created and synced reservation ${booking.bookingId} to local database`
         );
 
-        // Log create operation
+        // Step 9: Log create operation
         await this.databaseService.operationLog.create({
             data: { type: OperationType.CREATE_RESERVATION, restaurantId },
         });
 
-        // Generate human-readable description
+        // Step 10: Generate human-readable description (includes offer info)
         let description = `Successfully created a new reservation. `;
         description += `Booking ID: ${booking.bookingId}. `;
         description += `Customer: ${booking.name} (phone: ${booking.phone}`;
@@ -604,6 +763,15 @@ export class ReservationsService {
         }
         if (allergies) {
             description += ` Allergies: ${allergies}.`;
+        }
+        if (offerId && availability.offers) {
+            const selectedOffer = availability.offers.find(
+                (o) => o.id === offerId
+            );
+            description += ` Selected offer: ${selectedOffer?.name || `ID ${offerId}`}.`;
+        }
+        if (hasPrepayment) {
+            description += ` PREPAYMENT REQUIRED: A payment link has been sent to the customer's email.`;
         }
 
         return new BookingObjectModel({
@@ -632,6 +800,7 @@ export class ReservationsService {
             email?: string;
             roomId?: string;
             allergies?: string;
+            offerId?: number;
         }
     ): Promise<BookingObjectModel> {
         this.logger.log(
@@ -670,6 +839,44 @@ export class ReservationsService {
             updates.allergies !== undefined
                 ? updates.allergies
                 : existingBooking.allergies;
+        const offerId = updates.offerId;
+
+        // Validate offer if date or time is changing
+        if (updates.date || updates.time) {
+            const availability = await this.checkAvailability(
+                restaurantId,
+                date,
+                numberOfCustomers,
+                time
+            );
+
+            const requestedSlot =
+                availability.otherAvailableSlotsForThatDay.find(
+                    (slot) => slot.time === time
+                );
+
+            if (requestedSlot?.isOfferRequired) {
+                // Check if existing booking has an offer
+                const existingOfferId =
+                    existingBooking.booking_offers?.[0]?.offer_id;
+                const effectiveOfferId = offerId ?? existingOfferId;
+
+                if (!effectiveOfferId) {
+                    throw new GeneralError(
+                        `An offer must be selected for this time slot. Valid offer IDs: ${requestedSlot.requiredOfferIds?.join(", ")}`
+                    );
+                }
+
+                if (
+                    requestedSlot.requiredOfferIds &&
+                    !requestedSlot.requiredOfferIds.includes(effectiveOfferId)
+                ) {
+                    throw new GeneralError(
+                        `Invalid offer ID ${effectiveOfferId}. Valid offers for this slot: ${requestedSlot.requiredOfferIds.join(", ")}`
+                    );
+                }
+            }
+        }
 
         // Handle room ID
         let zenchefRoomId: number | undefined;
@@ -698,7 +905,8 @@ export class ReservationsService {
             comments || undefined,
             email || undefined,
             zenchefRoomId,
-            allergies || undefined
+            allergies || undefined,
+            offerId
         );
 
         // Sync to local database
@@ -747,6 +955,36 @@ export class ReservationsService {
     }
 
     /**
+     * Extracts offer details from a Zenchef booking
+     * Since customer can only select ONE offer, we take the first item
+     */
+    private extractOfferFromBooking(booking: {
+        booking_offers?: Array<{
+            offer_id: number;
+            offer_data?: {
+                name?: string;
+                description?: string;
+            };
+        }>;
+    }): {
+        offerId?: number;
+        offerName?: string;
+        offerDescription?: string;
+    } {
+        const bookingOffer = booking.booking_offers?.[0];
+
+        if (!bookingOffer) {
+            return {};
+        }
+
+        return {
+            offerId: bookingOffer.offer_id,
+            offerName: bookingOffer.offer_data?.name,
+            offerDescription: bookingOffer.offer_data?.description,
+        };
+    }
+
+    /**
      * Gets a specific reservation by booking ID
      * @param restaurantId - Internal restaurant ID
      * @param bookingId - Zenchef booking ID
@@ -772,6 +1010,9 @@ export class ReservationsService {
         // Map Zenchef booking data to our model
         const fullName = `${booking.firstname} ${booking.lastname}`.trim();
 
+        // Extract offer details
+        const offerDetails = this.extractOfferFromBooking(booking);
+
         // Generate human-readable description
         let description = `Reservation details for Booking ID: ${booking.id}. `;
         description += `Customer: ${fullName} (phone: ${booking.phone_number}`;
@@ -790,6 +1031,10 @@ export class ReservationsService {
         if (booking.shift_slot?.shift?.name) {
             description += ` Seating area: ${booking.shift_slot.shift.name}.`;
         }
+        // Include offer in description
+        if (offerDetails.offerName) {
+            description += ` Selected offer: ${offerDetails.offerName}.`;
+        }
 
         return new BookingObjectModel({
             bookingId: booking.id.toString(),
@@ -802,6 +1047,10 @@ export class ReservationsService {
             email: booking.email || undefined,
             status: booking.status,
             description,
+            // Include offer details
+            offerId: offerDetails.offerId,
+            offerName: offerDetails.offerName,
+            offerDescription: offerDetails.offerDescription,
         });
     }
 

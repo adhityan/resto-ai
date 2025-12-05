@@ -107,6 +107,27 @@ export class ReservationItemModel {
     })
     canCancel: boolean;
 
+    @ApiProperty({
+        description: "ID of the selected offer",
+        example: 71358,
+        required: false,
+    })
+    offerId?: number;
+
+    @ApiProperty({
+        description: "Name of the selected offer",
+        example: "Chef's Heritage Menu",
+        required: false,
+    })
+    offerName?: string;
+
+    @ApiProperty({
+        description: "Description of the selected offer",
+        example: "A curated 5-course dining experience",
+        required: false,
+    })
+    offerDescription?: string;
+
     constructor(data: {
         bookingId: string;
         status: string;
@@ -122,6 +143,9 @@ export class ReservationItemModel {
         allergies?: string;
         seatingAreaId?: string;
         seatingAreaName?: string;
+        offerId?: number;
+        offerName?: string;
+        offerDescription?: string;
     }) {
         this.bookingId = data.bookingId;
         this.status = data.status;
@@ -137,6 +161,9 @@ export class ReservationItemModel {
         this.allergies = data.allergies;
         this.seatingAreaId = data.seatingAreaId;
         this.seatingAreaName = data.seatingAreaName;
+        this.offerId = data.offerId;
+        this.offerName = data.offerName;
+        this.offerDescription = data.offerDescription;
         
         // Calculate canModify and canCancel based on status and date
         const unchangeableStatuses = ['canceled', 'refused', 'over', 'no_shown'];

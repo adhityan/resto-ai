@@ -224,6 +224,34 @@ export interface ZenchefCustomerSheet {
 }
 
 /**
+ * Represents an offer attached to a booking
+ */
+export interface ZenchefBookingOffer {
+    id: number;
+    offer_id: number;
+    booking_id: number;
+    count: number;
+    offer_data: {
+        id: number;
+        restaurant_id: number;
+        name: string;
+        position?: number;
+        charge_per_guests?: number;
+        is_on_first_step?: boolean;
+        has_prepayment?: boolean;
+        date_from?: string;
+        date_to?: string;
+        description?: string;
+        is_active?: boolean;
+        created_at?: string;
+        updated_at?: string;
+        deleted_at?: string | null;
+    };
+    created_at?: string;
+    updated_at?: string;
+}
+
+/**
  * Shift slot reference in booking
  */
 export interface ZenchefBookingShiftSlot {
@@ -259,6 +287,16 @@ export interface ZenchefBookingData {
     customersheet?: ZenchefCustomerSheet;
     created_at: string;
     updated_at: string;
+    /**
+     * URL for prepayment/confirmation (used when prepayment is required)
+     * Will be null if no prepayment is needed
+     */
+    url?: string | null;
+    /**
+     * Array of offers attached to this booking
+     * Customer can only have ONE offer per booking
+     */
+    booking_offers?: ZenchefBookingOffer[];
 }
 
 /**
@@ -305,6 +343,15 @@ export interface ZenchefCreateBookingPayload {
     wish?: {
         booking_room_id: number;
     };
+    /**
+     * Offer selection for this booking
+     * Customer can only select ONE offer per reservation
+     * Array will contain exactly one item when an offer is selected
+     */
+    offers?: Array<{
+        count: number; // Number of guests (typically same as nb_guests)
+        offer_id: number; // ID of the selected offer
+    }>;
 }
 
 /**

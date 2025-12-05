@@ -46,16 +46,37 @@ export class SeatingAreaInfoModel {
     @ApiProperty({ description: "Maximum capacity", example: 50 })
     maxCapacity: number;
 
+    @ApiProperty({
+        description:
+            "Amount per guest required for prepayment confirmation (in cents/smallest currency unit)",
+        example: 5000,
+        required: false,
+    })
+    paymentRequiredForConfirmation?: number;
+
+    @ApiProperty({
+        description:
+            "True if this slot cannot be cancelled after booking due to cancellation window",
+        example: false,
+        required: false,
+    })
+    notCancellable?: boolean;
+
     constructor(data: {
         id: string;
         name: string;
         description: string | null;
         maxCapacity: number;
+        paymentRequiredForConfirmation?: number;
+        notCancellable?: boolean;
     }) {
         this.id = data.id;
         this.name = data.name;
         this.maxCapacity = data.maxCapacity;
         this.description = data.description ?? undefined;
+        this.paymentRequiredForConfirmation =
+            data.paymentRequiredForConfirmation;
+        this.notCancellable = data.notCancellable;
     }
 }
 
@@ -72,9 +93,32 @@ export class TimeSlotModel {
     })
     seatingAreas: SeatingAreaInfoModel[];
 
-    constructor(data: { time: string; seatingAreas: SeatingAreaInfoModel[] }) {
+    @ApiProperty({
+        description:
+            "Whether an offer must be selected when booking this time slot",
+        example: true,
+        required: false,
+    })
+    isOfferRequired?: boolean;
+
+    @ApiProperty({
+        description:
+            "IDs of valid offers that can be selected for this slot (only present when isOfferRequired is true)",
+        example: [71358, 71359],
+        required: false,
+    })
+    requiredOfferIds?: number[];
+
+    constructor(data: {
+        time: string;
+        seatingAreas: SeatingAreaInfoModel[];
+        isOfferRequired?: boolean;
+        requiredOfferIds?: number[];
+    }) {
         this.time = data.time;
         this.seatingAreas = data.seatingAreas;
+        this.isOfferRequired = data.isOfferRequired;
+        this.requiredOfferIds = data.requiredOfferIds;
     }
 }
 
@@ -121,10 +165,11 @@ export class AvailabilityResponseModel {
 
     @ApiProperty({
         description:
-            "Available offers that match the number of guests (filtered by min/max pax and excludes private offers)",
+            "Available offers that match the number of guests. ONLY present when at least one shift has is_offer_required: true. Omitted entirely otherwise.",
         type: [OfferModel],
+        required: false,
     })
-    offers: OfferModel[];
+    offers?: OfferModel[];
 
     @ApiProperty({
         description:
@@ -154,7 +199,7 @@ export class AvailabilityResponseModel {
         availableRoomTypesOnRequestedTime?: SeatingAreaInfoModel[];
         otherAvailableSlotsForThatDay: TimeSlotModel[];
         nextAvailableDate: NextAvailableDateModel | null;
-        offers: OfferModel[];
+        offers?: OfferModel[];
         description: string;
     }) {
         this.isRequestedSlotAvailable = data.isRequestedSlotAvailable;
@@ -163,6 +208,9 @@ export class AvailabilityResponseModel {
         this.otherAvailableSlotsForThatDay = data.otherAvailableSlotsForThatDay;
         this.nextAvailableDate = data.nextAvailableDate;
         this.description = data.description;
-        this.offers = data.offers;
+        // Only assign offers if defined (field omitted from JSON when undefined)
+        if (data.offers !== undefined) {
+            this.offers = data.offers;
+        }
     }
 }
