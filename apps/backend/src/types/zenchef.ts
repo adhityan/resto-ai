@@ -8,6 +8,88 @@
 // ============================================================================
 
 /**
+ * Turn times configuration (slots available per party size)
+ */
+export interface ZenchefTurnTimes {
+    "2_pax_slots"?: number;
+    "4_pax_slots"?: number;
+    "6_pax_slots"?: number;
+    "8_pax_slots"?: number;
+    "10_pax_slots"?: number;
+    "12_pax_slots"?: number;
+    [key: string]: number | undefined;
+}
+
+/**
+ * Capacity configuration for shifts and slots
+ */
+export interface ZenchefCapacity {
+    min: number | null;
+    max: number | null;
+    total_per_slot: number | null;
+    waitlist_min?: number;
+    waitlist_max?: number;
+    waitlist_total_per_slot?: number;
+    show_turn_times?: boolean;
+    buffer_slots_count?: number;
+    turn_times?: ZenchefTurnTimes;
+}
+
+/**
+ * Prepayment parameters for a shift
+ */
+export interface ZenchefPrepaymentParam {
+    is_web_booking_askable: boolean;
+    min_guests: number;
+    charge_per_guests: number;
+}
+
+/**
+ * Cancellation parameters for a shift
+ */
+export interface ZenchefCancelationParam {
+    enduser_cancelable_before: number;
+    enduser_cancelable_reference: string;
+}
+
+/**
+ * Confirmation settings for a shift
+ */
+export interface ZenchefConfirmation {
+    is_auto: boolean;
+    is_auto_until: string | null;
+}
+
+/**
+ * Offer configuration
+ */
+export interface ZenchefOfferConfig {
+    is_limited_to_pax?: boolean;
+    is_same_for_all?: boolean;
+    min_pax_available: number;
+    max_pax_available: number;
+}
+
+/**
+ * Represents an offer within a shift slot
+ */
+export interface ZenchefSlotOffer {
+    id: number;
+    has_prepayment: boolean;
+    bookable_from: string;
+    bookable_to: string;
+    capacity: ZenchefCapacity;
+    config: ZenchefOfferConfig;
+    stock: number;
+    has_duration: boolean;
+    turn_times: ZenchefTurnTimes | null;
+    has_specific_rooms: boolean;
+    rooms: number[];
+    possible_guests: number[];
+    available_rooms: Record<string, number[]> | unknown[];
+}
+
+/**
  * Represents a single time slot in a shift
  */
 export interface ZenchefShiftSlot {
@@ -18,7 +100,11 @@ export interface ZenchefShiftSlot {
     marked_as_full: boolean;
     possible_guests: number[]; // Array of allowed guest counts
     waitlist_possible_guests: number[];
-    available_rooms: Record<string, number[]>;
+    available_rooms: Record<string, number[]> | unknown[];
+    capacity?: ZenchefCapacity;
+    bookable_from?: string;
+    bookable_to?: string;
+    offers?: ZenchefSlotOffer[];
 }
 
 /**
@@ -26,14 +112,27 @@ export interface ZenchefShiftSlot {
  */
 export interface ZenchefOffer {
     id: number;
+    stock_id?: number;
     name: string;
     name_translations?: Record<string, string>;
     description?: Record<string, string>;
+    picture_url?: string;
+    stock?: number;
+    is_unlimited?: boolean;
     is_private: boolean;
-    config: {
-        min_pax_available: number;
-        max_pax_available: number;
-    };
+    has_duration?: boolean;
+    turn_times?: ZenchefTurnTimes | null;
+    charge_per_guests?: number | null;
+    has_prepayment?: boolean;
+    bookable_from_interval?: number | null;
+    bookable_from_reference?: string;
+    bookable_to_interval?: number | null;
+    bookable_to_reference?: string;
+    has_specific_rooms?: boolean;
+    rooms?: number[];
+    capacity?: ZenchefCapacity;
+    config: ZenchefOfferConfig;
+    total?: number;
 }
 
 /**
@@ -42,14 +141,27 @@ export interface ZenchefOffer {
 export interface ZenchefShift {
     id: number;
     name: string; // e.g., "Lunch", "Dinner", "Breakfast"
-    comment: string | null;
+    name_translations?: Record<string, string>;
+    comment: string | Record<string, string> | null;
     open: string; // "HH:MM" format
     close: string; // "HH:MM" format
+    bookable_from?: string;
+    bookable_to?: string;
+    color?: string;
     total: number;
     waitlist_total: number;
     is_standard: boolean;
+    capacity?: ZenchefCapacity;
     blocked_tables: number[];
     bookable_rooms: number[];
+    is_offer_required?: boolean;
+    offer_required_from_pax?: number | null;
+    charge_param?: unknown;
+    prepayment_param?: ZenchefPrepaymentParam | null;
+    cancelation_param?: ZenchefCancelationParam | null;
+    confirmation?: ZenchefConfirmation;
+    marked_as_full?: boolean;
+    closed?: boolean;
     shift_slots: ZenchefShiftSlot[];
     offers?: ZenchefOffer[];
 }
@@ -198,8 +310,7 @@ export interface ZenchefCreateBookingPayload {
 /**
  * Payload for updating an existing booking
  */
-export interface ZenchefUpdateBookingPayload
-    extends ZenchefCreateBookingPayload {
+export interface ZenchefUpdateBookingPayload extends ZenchefCreateBookingPayload {
     // Same structure as create
 }
 

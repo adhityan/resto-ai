@@ -301,7 +301,7 @@ export class ZenchefService {
                     );
                     return {
                         isRequestedSlotAvailable,
-                        // offers,
+                        offers,
                         availableRoomTypesOnRequestedTime,
                         otherAvailableSlotsForThatDay: [],
                         nextAvailableDate: null,
@@ -321,7 +321,7 @@ export class ZenchefService {
 
             return {
                 isRequestedSlotAvailable,
-                // offers,
+                offers,
                 availableRoomTypesOnRequestedTime,
                 otherAvailableSlotsForThatDay,
                 nextAvailableDate: null,
@@ -410,14 +410,14 @@ export class ZenchefService {
                             );
 
                             // Extract offers for this date
-                            // const offers = this.extractOffers(
-                            //     [shift],
-                            //     numberOfPeople
-                            // );
+                            const offers = this.extractOffers(
+                                [shift],
+                                numberOfPeople
+                            );
 
                             return {
                                 isRequestedSlotAvailable,
-                                // offers,
+                                offers,
                                 otherAvailableSlotsForThatDay: [],
                                 nextAvailableDate:
                                     seatingAreas.length > 0
@@ -441,7 +441,7 @@ export class ZenchefService {
         // No availability found in next 30 days
         return {
             isRequestedSlotAvailable,
-            // offers: [],
+            offers: [],
             otherAvailableSlotsForThatDay: [],
             nextAvailableDate: null,
         };

@@ -193,7 +193,7 @@ export class ReservationsService {
 
             return new AvailabilityResponseModel({
                 isRequestedSlotAvailable: false,
-                // offers: [],
+                offers: [],
                 otherAvailableSlotsForThatDay: [],
                 nextAvailableDate: null,
                 description,
@@ -252,24 +252,24 @@ export class ReservationsService {
         }
 
         // Section 2: Available offers
-        // if (availability.offers.length > 0) {
-        //     parts.push(
-        //         `\nAVAILABLE OFFERS (${availability.offers.length} matching your party size):`
-        //     );
-        //     availability.offers.forEach((offer, idx) => {
-        //         parts.push(`  ${idx + 1}. "${offer.name}" (ID: ${offer.id})`);
-        //         if (offer.description) {
-        //             // Truncate long descriptions
-        //             const desc =
-        //                 offer.description.length > 100
-        //                     ? offer.description.substring(0, 97) + "..."
-        //                     : offer.description;
-        //             parts.push(`     ${desc}`);
-        //         }
-        //     });
-        // } else {
-        //     parts.push(`\nAVAILABLE OFFERS: None matching your party size`);
-        // }
+        if (availability.offers.length > 0) {
+            parts.push(
+                `\nAVAILABLE OFFERS (${availability.offers.length} matching your party size):`
+            );
+            availability.offers.forEach((offer, idx) => {
+                parts.push(`  ${idx + 1}. "${offer.name}" (ID: ${offer.id})`);
+                if (offer.description) {
+                    // Truncate long descriptions
+                    const desc =
+                        offer.description.length > 100
+                            ? offer.description.substring(0, 97) + "..."
+                            : offer.description;
+                    parts.push(`     ${desc}`);
+                }
+            });
+        } else {
+            parts.push(`\nAVAILABLE OFFERS: None matching your party size`);
+        }
 
         // Section 3: Other available time slots for the day
         if (availability.otherAvailableSlotsForThatDay.length > 0) {
