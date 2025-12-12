@@ -69,13 +69,8 @@ async function createCallInDatabase(
     return data;
 }
 
-function setupSessionListeners(
-    session: voice.AgentSession,
-    client: AxiosInstance,
-    callId: string
-) {
-    // Transcript listener - handles multiple events per session
-    const transcriptListener = async (ev: {
+function createTranscriptListener(client: AxiosInstance, callId: string) {
+    return async (ev: {
         item: { textContent?: string; role: string; interrupted?: boolean };
     }) => {
         try {
@@ -97,6 +92,15 @@ function setupSessionListeners(
             );
         }
     };
+}
+
+function setupSessionListeners(
+    session: voice.AgentSession,
+    client: AxiosInstance,
+    callId: string
+) {
+    const transcriptListener = createTranscriptListener(client, callId);
+
     session.on(
         voice.AgentSessionEventTypes.ConversationItemAdded,
         transcriptListener
@@ -108,14 +112,6 @@ function setupSessionListeners(
             voice.AgentSessionEventTypes.ConversationItemAdded,
             transcriptListener
         );
-
-        try {
-            await client.post<CallModel>(`/calls/${callId}/end`, {
-                languages: ["en"],
-            });
-        } catch (error) {
-            console.error(`Failed to end call: ${getErrorMessage(error)}`);
-        }
     });
 }
 
@@ -123,8 +119,9 @@ function createSession(ctx: JobContext) {
     return new voice.AgentSession({
         stt: new deepgram.STT({
             detectLanguage: true,
+            language: "multi",
             smartFormat: true,
-            model: "nova-3",
+            model: "nova-2-general",
         }),
 
         tts: new elevenlabs.TTS({
@@ -134,6 +131,7 @@ function createSession(ctx: JobContext) {
                 id: "zGjIP4SZlMnY9m93k97r",
                 category: "conversational",
             },
+            languageCode: "en",
         }),
 
         llm: new gemini.LLM({
@@ -207,6 +205,7 @@ export default defineAgent({
         await session.start({
             agent: new RestaurantStandardAgent({
                 client,
+                callId: call.id,
                 customer,
                 roomName: ctx.job?.room?.name!,
                 managerPhone: restaurantDetails.restaurantManagerPhone,

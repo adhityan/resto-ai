@@ -970,3 +970,8 @@ Single reservation by Zenchef booking ID using composite key.
 11. **Publisher Headers:** Required for create/cancel operations
 12. **Cache Population:** Search results populate cache; empty cache returns empty for filter-less search
 
+
+
+
+
+

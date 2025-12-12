@@ -10,10 +10,11 @@ import { createSearchReservationsTool } from "../tools/searchReservations.js";
 import { createGetRestaurantDetailTool } from "../tools/getRestaurantDetail.js";
 import { createGetReservationByIdTool } from "../tools/getReservationById.js";
 import { createCheckAvailabilityTool } from "../tools/checkAvailability.js";
-import { createTransferToNumberTool } from "../tools/transferToNumber.js";
+import { createTransferToManagerTool } from "../tools/transferToNumber.js";
 import { createMakeReservationTool } from "../tools/makeReservation.js";
 import { describeCustomerKnowledge } from "../utils/customer.js";
 import { endCallTool } from "../tools/endCallTool.js";
+import { createSwitchLanguageTool } from "src/tools/switchLanguage.js";
 
 const AGENT_INSTRUCTIONS = `# Personality
 You are Saar, working at Miri Mary restaurant in Amsterdam's De Pijp neighborhood.
@@ -331,10 +332,11 @@ export class RestaurantStandardAgent extends voice.Agent {
     constructor(options: {
         roomName: string;
         client: AxiosInstance;
+        callId: string;
         customer: CustomerModel;
         managerPhone: string;
     }) {
-        const { client, customer, roomName, managerPhone } = options;
+        const { client, callId, customer, roomName, managerPhone } = options;
 
         // Create template renderer with all parameters
         const renderer = new TemplateRenderer({
@@ -352,11 +354,14 @@ export class RestaurantStandardAgent extends voice.Agent {
             searchReservations: createSearchReservationsTool(client),
             getRestaurantDetail: createGetRestaurantDetailTool(client),
             getReservationById: createGetReservationByIdTool(client),
-            transferToNumber: createTransferToNumberTool(
+            endCall: endCallTool(callId, roomName, client),
+            switchLanguage: createSwitchLanguageTool(),
+            transferToManager: createTransferToManagerTool(
+                client,
+                callId,
                 roomName,
                 managerPhone
             ),
-            endCall: endCallTool(roomName),
         };
 
         super({

@@ -195,4 +195,40 @@ export class CallsService {
         const items = transcripts.map((t) => new TranscriptItemModel(t));
         return new TranscriptListResponseModel(items, transcripts.length);
     }
+
+    /**
+     * Escalate a call to manager - creates a SYSTEM transcript entry and sets escalation flag
+     */
+    async escalateCall(callId: string): Promise<boolean> {
+        this.logger.log(`Escalating call to manager: ${callId}`);
+
+        const existingCall = await this.databaseService.call.findUnique({
+            where: { id: callId },
+        });
+
+        if (!existingCall) return false;
+
+        const toolCallContents = JSON.stringify({
+            type: "ToolCall",
+            toolName: "TransferCall",
+            message: "Transferred call to manager",
+        });
+
+        await this.databaseService.$transaction([
+            this.databaseService.callTranscript.create({
+                data: {
+                    callId,
+                    speaker: Speaker.SYSTEM,
+                    contents: toolCallContents,
+                    wasInterupted: false,
+                },
+            }),
+            this.databaseService.call.update({
+                where: { id: callId },
+                data: { escalationRequested: true },
+            }),
+        ]);
+
+        return true;
+    }
 }

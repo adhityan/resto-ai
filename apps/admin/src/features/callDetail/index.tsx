@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams, useRouter } from "@tanstack/react-router";
-import { IconArrowLeft, IconCopy, IconUser, IconRobot } from "@tabler/icons-react";
+import { IconArrowLeft, IconCopy, IconUser, IconRobot, IconPhoneOutgoing } from "@tabler/icons-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import api from "@/api";
@@ -18,10 +18,28 @@ import { calculateDurationSeconds, formatDuration } from "@/utils/format";
 
 interface TranscriptItem {
     id: string;
-    speaker: "USER" | "AGENT";
+    speaker: "USER" | "AGENT" | "SYSTEM";
     contents: string;
     wasInterupted: boolean;
     time: string;
+}
+
+interface SystemToolCall {
+    type: string;
+    toolName: string;
+    message: string;
+}
+
+function parseSystemContents(contents: string): SystemToolCall | null {
+    try {
+        const parsed = JSON.parse(contents);
+        if (parsed.type === "ToolCall" && parsed.message) {
+            return parsed as SystemToolCall;
+        }
+        return null;
+    } catch {
+        return null;
+    }
 }
 
 interface TranscriptListResponse {
@@ -273,48 +291,72 @@ export default function CallDetailPage() {
                             <p className="text-muted-foreground text-sm">Loading transcripts...</p>
                         ) : transcripts && transcripts.items.length > 0 ? (
                             <div className="space-y-3 max-h-96 overflow-y-auto">
-                                {transcripts.items.map((transcript) => (
-                                    <div
-                                        key={transcript.id}
-                                        className={`flex gap-3 ${transcript.speaker === "USER" ? "flex-row" : "flex-row-reverse"}`}
-                                    >
+                                {transcripts.items.map((transcript) => {
+                                    // Handle SYSTEM speaker (tool calls)
+                                    if (transcript.speaker === "SYSTEM") {
+                                        const toolCall = parseSystemContents(transcript.contents);
+                                        return (
+                                            <div
+                                                key={transcript.id}
+                                                className="flex justify-center"
+                                            >
+                                                <div className="flex items-center gap-2 rounded-full bg-orange-100 dark:bg-orange-950 px-4 py-2">
+                                                    <IconPhoneOutgoing className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+                                                    <span className="text-sm font-medium text-orange-700 dark:text-orange-300">
+                                                        {toolCall?.message || transcript.contents}
+                                                    </span>
+                                                    <span className="text-muted-foreground text-xs">
+                                                        {format(new Date(transcript.time), "HH:mm:ss")}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        );
+                                    }
+
+                                    // Handle USER and AGENT speakers
+                                    return (
                                         <div
-                                            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
-                                                transcript.speaker === "USER"
-                                                    ? "bg-primary text-primary-foreground"
-                                                    : "bg-muted"
-                                            }`}
+                                            key={transcript.id}
+                                            className={`flex gap-3 ${transcript.speaker === "USER" ? "flex-row" : "flex-row-reverse"}`}
                                         >
-                                            {transcript.speaker === "USER" ? (
-                                                <IconUser className="h-4 w-4" />
-                                            ) : (
-                                                <IconRobot className="h-4 w-4" />
-                                            )}
-                                        </div>
-                                        <div
-                                            className={`flex-1 rounded-lg p-3 ${
-                                                transcript.speaker === "USER"
-                                                    ? "bg-primary/10 mr-12"
-                                                    : "bg-muted ml-12"
-                                            }`}
-                                        >
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <span className="text-xs font-medium">
-                                                    {transcript.speaker === "USER" ? "Customer" : "Agent"}
-                                                </span>
-                                                <span className="text-muted-foreground text-xs">
-                                                    {format(new Date(transcript.time), "HH:mm:ss")}
-                                                </span>
-                                                {transcript.wasInterupted && (
-                                                    <Badge variant="outline" className="text-xs py-0">
-                                                        Interrupted
-                                                    </Badge>
+                                            <div
+                                                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
+                                                    transcript.speaker === "USER"
+                                                        ? "bg-primary text-primary-foreground"
+                                                        : "bg-muted"
+                                                }`}
+                                            >
+                                                {transcript.speaker === "USER" ? (
+                                                    <IconUser className="h-4 w-4" />
+                                                ) : (
+                                                    <IconRobot className="h-4 w-4" />
                                                 )}
                                             </div>
-                                            <p className="text-sm">{transcript.contents}</p>
+                                            <div
+                                                className={`flex-1 rounded-lg p-3 ${
+                                                    transcript.speaker === "USER"
+                                                        ? "bg-primary/10 mr-12"
+                                                        : "bg-muted ml-12"
+                                                }`}
+                                            >
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <span className="text-xs font-medium">
+                                                        {transcript.speaker === "USER" ? "Customer" : "Agent"}
+                                                    </span>
+                                                    <span className="text-muted-foreground text-xs">
+                                                        {format(new Date(transcript.time), "HH:mm:ss")}
+                                                    </span>
+                                                    {transcript.wasInterupted && (
+                                                        <Badge variant="outline" className="text-xs py-0">
+                                                            Interrupted
+                                                        </Badge>
+                                                    )}
+                                                </div>
+                                                <p className="text-sm">{transcript.contents}</p>
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         ) : (
                             <p className="text-muted-foreground text-sm">No transcripts available for this call.</p>

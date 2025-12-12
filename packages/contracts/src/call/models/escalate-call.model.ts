@@ -1,6 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger";
 
-export class AddTranscriptResponseModel {
+export class EscalateCallResponseModel {
     @ApiProperty({ example: true })
     success: boolean;
 
@@ -8,10 +8,4 @@ export class AddTranscriptResponseModel {
         this.success = true;
     }
 }
-
-
-
-
-
-
 

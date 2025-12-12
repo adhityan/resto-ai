@@ -1,5 +1,8 @@
 import { getJobContext, JobContext } from "@livekit/agents";
 import { getRoomServiceClient } from "./roomService.js";
+import { CallModel } from "@repo/contracts";
+import { getErrorMessage } from "./http.js";
+import { AxiosInstance } from "axios";
 
 /**
  * Parses a JSON metadata string into a Record.
@@ -34,7 +37,17 @@ export function getFieldFromContext(
     }
 }
 
-export async function endCall(contextOrName?: JobContext | string) {
+export function endCall(contextOrName?: JobContext | string);
+export function endCall(
+    contextOrName: JobContext | string,
+    client: AxiosInstance,
+    callId: string
+);
+export async function endCall(
+    contextOrName?: JobContext | string,
+    client?: AxiosInstance,
+    callId?: string
+) {
     let context: JobContext | undefined = undefined;
     let roomNameFromInput: string | undefined = undefined;
     if (typeof contextOrName === "string") roomNameFromInput = contextOrName;
@@ -54,5 +67,19 @@ export async function endCall(contextOrName?: JobContext | string) {
         await roomServiceClient.deleteRoom(roomName);
     } else {
         console.warn("Room name not found in job context. Cannot end call!");
+    }
+
+    if (client && callId) {
+        await recordCallEnd(client, callId);
+    }
+}
+
+async function recordCallEnd(client: AxiosInstance, callId: string) {
+    try {
+        await client.post<CallModel>(`/calls/${callId}/end`, {
+            languages: ["en"],
+        });
+    } catch (error) {
+        console.error(`Failed to end call: ${getErrorMessage(error)}`);
     }
 }

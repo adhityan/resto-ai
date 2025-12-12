@@ -7,4 +7,5 @@ export * from "./end-call.model";
 export * from "./add-transcript.model";
 export * from "./add-transcript-response.model";
 export * from "./transcript.model";
+export * from "./escalate-call.model";
 

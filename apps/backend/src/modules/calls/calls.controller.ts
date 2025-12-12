@@ -22,6 +22,7 @@ import {
     AddTranscriptModel,
     AddTranscriptResponseModel,
     TranscriptListResponseModel,
+    EscalateCallResponseModel,
 } from "@repo/contracts";
 
 import { CallsService } from "./calls.service";
@@ -126,5 +127,16 @@ export class CallsController {
         const success = await this.callsService.addTranscript(id, body);
         if (!success) throw new CallNotFoundError(id);
         return new AddTranscriptResponseModel();
+    }
+
+    @OnlyApp()
+    @Post(":id/escalate")
+    @ApiOkResponse({ type: EscalateCallResponseModel })
+    async escalateCall(
+        @Param("id") id: string
+    ): Promise<EscalateCallResponseModel> {
+        const success = await this.callsService.escalateCall(id);
+        if (!success) throw new CallNotFoundError(id);
+        return new EscalateCallResponseModel();
     }
 }

@@ -20,7 +20,7 @@
         "@nestjs/common": "^11.1.9",
         "@nestjs/config": "^4.0.2",
         "@nestjs/core": "^11.1.9",
-        "@nestjs/jwt": "^11.0.1",
+        "@nestjs/jwt": "^11.0.2",
         "@nestjs/platform-fastify": "^11.1.9",
         "@nestjs/swagger": "^11.2.3",
         "@nestjs/terminus": "^11.0.0",
@@ -33,7 +33,7 @@
         "class-validator": "^0.14.3",
         "date-fns": "^4.1.0",
         "fuse.js": "^7.1.0",
-        "livekit-server-sdk": "^2.14.2",
+        "livekit-server-sdk": "^2.15.0",
         "nestjs-cls": "^6.1.0",
         "nestjs-pino": "^4.5.0",
         "pino-http": "^10.5.0",
@@ -48,7 +48,7 @@
         "@repo/typescript-config": "*",
         "@swc/cli": "^0.7.9",
         "@swc/core": "^1.15.3",
-        "@types/node": "^24.10.1",
+        "@types/node": "^25.0.0",
         "eslint": "^9.39.1",
         "typescript": "^5.9.3"
     }

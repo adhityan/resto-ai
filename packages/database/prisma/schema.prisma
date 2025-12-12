@@ -156,6 +156,7 @@ model Customer {
 enum Speaker {
   USER
   AGENT
+  SYSTEM
 }
 
 model Call {
